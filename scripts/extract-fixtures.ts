@@ -11,6 +11,15 @@
 import { loadRegistry, PHASE1_STAGES } from '../src/llm/registry.ts';
 import { runExtract } from '../src/stages/extract.ts';
 import { listFixtures, loadFixture, checkPayload } from '../src/lib/fixtures.ts';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+/**
+ * Ergebnisse landen unter data/payloads/. Damit koennen spaetere Stufen
+ * (Draft, Gate) gegen echte Extraktionen laufen, ohne jedes Mal Tokens zu
+ * verbrennen.
+ */
+const PAYLOAD_DIR = resolve(import.meta.dirname, '../data/payloads');
 
 function fail(message: string): never {
   console.error(`\nFehlgeschlagen:\n  ${message.split('\n').join('\n  ')}\n`);
@@ -54,6 +63,12 @@ for (const name of names) {
     rows.push(`${name.padEnd(34)} FEHLER`);
     continue;
   }
+
+  mkdirSync(PAYLOAD_DIR, { recursive: true });
+  writeFileSync(
+    resolve(PAYLOAD_DIR, `${name}.json`),
+    JSON.stringify(result.payload, null, 2) + '\n',
+  );
 
   const { passed, failures } = checkPayload(result.payload, fixture.expected);
   totalFailures += failures.length;

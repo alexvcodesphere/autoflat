@@ -22,19 +22,27 @@ function truthy(value: unknown): boolean {
   return Boolean(value);
 }
 
+/**
+ * Steht ein Blocktag allein auf einer Zeile, verschwindet die ganze Zeile
+ * samt Zeilenumbruch. Sonst risse ein eingesetzter Block eine Leerzeile
+ * mitten in eine Aufzählung — in einer Bewerbungsmail sieht das nach Fehler
+ * aus.
+ */
+const BLOCK_ON_OWN_LINE =
+  /^[ \t]*\{\{#(if|unless)\s+([a-z_0-9]+)\}\}[ \t]*\r?\n([\s\S]*?)^[ \t]*\{\{\/\1\}\}[ \t]*\r?\n/gm;
+
+const BLOCK_INLINE = /\{\{#(if|unless)\s+([a-z_0-9]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g;
+
 function applyBlocks(template: string, vars: TemplateVars): string {
-  const block = /\{\{#(if|unless)\s+([a-z_0-9]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g;
   let out = template;
-  let guard = 0;
-  while (block.test(out)) {
-    block.lastIndex = 0;
-    out = out.replace(block, (_m, kind: string, key: string, body: string) => {
-      const keep = kind === 'if' ? truthy(vars[key]) : !truthy(vars[key]);
-      return keep ? body : '';
-    });
-    if (++guard > 10) throw new TemplateError('Template zu tief verschachtelt');
+  for (let pass = 0; pass < 10; pass++) {
+    const before = out;
+    const replace = (_m: string, kind: string, key: string, body: string) =>
+      (kind === 'if' ? truthy(vars[key]) : !truthy(vars[key])) ? body : '';
+    out = out.replace(BLOCK_ON_OWN_LINE, replace).replace(BLOCK_INLINE, replace);
+    if (out === before) return out;
   }
-  return out;
+  throw new TemplateError('Template zu tief verschachtelt');
 }
 
 export function renderTemplate(template: string, vars: TemplateVars): string {

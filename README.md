@@ -5,7 +5,7 @@ Bewerbungsmail. Die maßgebliche Spec ist das Projektdokument; Verweise wie
 „§11" beziehen sich darauf. Leg sie als `docs/spec.md` ab, damit sie
 mitversioniert wird.
 
-**Stand: Phase 2 gebaut, Modelllauf steht aus.** Die Bauphasen stehen in der Spec, §14.
+**Stand: Phase 3 abgeschlossen.** Die Bauphasen stehen in der Spec, §14.
 
 ---
 
@@ -28,6 +28,7 @@ npm run llm:smoke           # echter Aufruf
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run llm:smoke` | ein Adapteraufruf gegen `schemas/smoke.json` |
 | `npm run extract:fixtures` | Extraktion über alle Fixtures, mit Zusicherungen |
+| `npm run draft:render` | T_VERWALTUNG aus gecachten Payloads, ohne Modell |
 
 Erster echter Aufruf am 20.08.2026 gegen `gemini-3.5-flash-lite`: 1089 ms,
 203 In / 114 Out, $0,00034590, Schema sauber validiert.
@@ -53,6 +54,11 @@ fixtures/              Eingefrorene Inseratsseiten + Zusicherungen. Siehe docs/f
 src/stages/extract.ts  Stufe extract: page_text -> Payload (§5).
 src/lib/capture.ts     Was der Client schickt; URL-Ersatzschluessel.
 src/lib/fixtures.ts    Fixture-Harness.
+src/lib/profile.ts     Liest prompts/profil.md. Geht nie an ein Modell.
+src/render/            Draft-Erzeugung ohne LLM: Template, Anrede, Betreff.
+prompts/profil.md      Bewerberprofil (Bonitätsblock).
+prompts/t_verwaltung.md  Template T_VERWALTUNG.
+data/payloads/         Gecachte Extraktionen, Eingabe für draft:render.
 src/config/env.ts      .env-Zugriff an genau einer Stelle.
 src/db/                Verbindung + Schema.
 src/lib/normalize.ts   Namensnormalisierung (§6). Überall dieselbe Funktion.
@@ -229,6 +235,59 @@ Kalenderrechnen mit einem genannten Datum, kein Raten.
 **Bekannte Lücke:** Kein Fixture verlangt `self_description: null`. Ein Modell,
 das dort immer etwas hineinschreibt, käme durch. Ein Inserat ganz ohne
 Rollenaussage wäre dafür nötig — falls dir eines unterkommt, ist es wertvoll.
+
+## Phase 3 — Entscheidungen
+
+**Anrede wird nie geraten.** Persönlich angeredet wird nur, wenn „Frau" oder
+„Herr" wörtlich im Inserat steht. Aus „Tobias" oder „Andrea Kranz" das
+Geschlecht zu erschließen geht regelmäßig schief, und eine falsche Anrede
+kostet mehr, als die persönliche einbringt. Sonst „Sehr geehrte Damen und
+Herren".
+
+**Nur Merkmale, die der Wohnung gehören.** Erst standen Aufzug, Keller und
+Stellplatz mit auf der Liste — „die 3-Zimmer-Wohnung mit Fahrstuhl" liest
+sich falsch, der Aufzug gehört zum Haus. Übrig bleiben Balkon, Terrasse,
+Loggia, Garten, Einbauküche, Gäste-WC. Findet sich keines, bleibt der Satz
+ohne Merkmal: kein Merkmal ist besser als ein schiefes.
+
+**Der URL-Ersatzschlüssel darf nicht in den Betreff.** „Anfrage
+url:kranz-immobilien.de/angebote/3-zimmer-wedding – …" wäre unbrauchbar.
+Fehlt eine echte Objektnummer, entfällt sie ersatzlos, und die Adresse trägt
+die Betreffzeile allein.
+
+**Ein unaufgelöster Platzhalter ist ein Fehler, kein leerer String.** Ein
+`{{beruf}}` mitten in einer Mail an eine Hausverwaltung wäre peinlich, ein
+stillschweigend leerer Satz auch. Der Renderer wirft.
+
+**Zwei Sperren statt stiller Fehler.** Solange `prompts/profil.md` auf
+`beispiel` steht, ist jeder Draft als nicht sendebereit markiert. Verlangt
+ein Inserat einen WBS und das Profil hat keinen, ebenso. Beides landet in
+`Draft.blockers` und später in der UI.
+
+### Zwei bewusste Abweichungen von §13
+
+**Die Wortgrenze steht bei 230 statt 100.** Die 100-Wort-Fassung war die erste
+Umsetzung und wurde als „zu nackt" verworfen. Maßstab ist jetzt eine
+Bewerbungsmail, mit der Alexander in München tatsächlich eine Wohnung bekommen
+hat — rund 200 Wörter. Der Zugewinn steckt in dem, was Vertrauen herstellt:
+die aufgeschlüsselte Einkommensangabe statt einer behaupteten Summe, ein Link
+auf ein echtes Profil, die Erklärung der auswärtigen Adresse. Nichts davon
+passt in 100 Wörter. Die Grenze bleibt trotzdem hart, damit das Template nicht
+unbemerkt ausufert.
+
+**Der Zweitkontakt wiederholt alle Angaben.** §13 will die Selbstvorstellung
+weglassen. Der Empfänger müsste dann aber in einer alten Mail nachsehen —
+Aufwand, den man einem überlaufenen Postfach nicht zumutet. Geändert hat sich
+nur der erste Satz, der den Vorkontakt benennt. Der Lookup auf `verwaltung_id`
+in `listing_event` kommt in Phase 6; der Renderer nimmt den Vorkontakt als
+Parameter und bleibt damit rein und testbar.
+
+### Der Satz zur Münchner Adresse
+
+Eine Berliner Bewerbung mit Münchner Absender wirft beim Empfänger eine Frage
+auf. Besser, sie steht beantwortet in der Mail, als dass sie unbeantwortet im
+Kopf bleibt. Der Satz steht als `hinweis_adresse` im Profil und ist frei
+formulierbar; fehlt er, entfällt die Zeile ersatzlos.
 
 ## Offene Punkte für spätere Phasen
 

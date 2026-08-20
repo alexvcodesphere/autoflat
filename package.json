@@ -12,7 +12,8 @@
     "llm:smoke": "node scripts/smoke-llm.ts",
     "test": "node --test \"test/**/*.test.ts\"",
     "typecheck": "tsc --noEmit",
-    "extract:fixtures": "node scripts/extract-fixtures.ts"
+    "extract:fixtures": "node scripts/extract-fixtures.ts",
+    "draft:render": "node scripts/render-draft.ts"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",
