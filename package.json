@@ -19,7 +19,8 @@
     "seed:places": "node scripts/seed-places.ts",
     "research:firma": "node scripts/research-firma.ts",
     "pipeline": "node scripts/pipeline.ts",
-    "grounding:check": "node scripts/grounding-check.ts"
+    "grounding:check": "node scripts/grounding-check.ts",
+    "gate:fixtures": "node scripts/gate-fixtures.ts"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",

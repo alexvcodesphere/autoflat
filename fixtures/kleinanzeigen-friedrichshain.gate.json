@@ -1,0 +1,5 @@
+{
+  "note": "Nachmieter, nicht Privatvermieter: 'ich ziehe ... nach Leipzig und suche daher einen Nachmieter für meine Wohnung'. Der Mieter entscheidet nicht, aber sein Vorschlag setzt sich meist durch (§8 Flow D).",
+  "risk": "low",
+  "branch": "T_NACHMIETER"
+}

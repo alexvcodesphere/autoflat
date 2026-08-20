@@ -1,0 +1,11 @@
+{
+  "note": "Vier Signale auf einmal: Vermieter im Ausland, Vorkasse vor Besichtigung, Schlüsselversand, Drängen auf WhatsApp. Dazu maschinell wirkendes Deutsch.",
+  "risk": "high",
+  "signals_must_include": [
+    "prepayment_before_viewing",
+    "keys_by_mail",
+    "landlord_abroad"
+  ],
+  "branch": "T_PRIVAT",
+  "must_not_send": true
+}

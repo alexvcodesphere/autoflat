@@ -6,10 +6,6 @@
  * Die echte Pipeline ist Phase 6 und läuft dann im Fastify-Dienst hinter
  * `POST /capture` — dieses Skript wird dabei gelöscht, nicht portiert.
  *
- * ACHTUNG bei `guessBranch()` weiter unten: das ist KEIN Gate. Es kennt nur
- * die harten Signale aus §7 Stufe 1 und rät im Rest. Phase 5 baut das Gate
- * gegen die Spec, nicht gegen diese Funktion — sonst zementiert ein
- * Behelfsstück die Klassifikation, die das teuerste Detail des Systems ist.
  *
  * ---
  *
@@ -24,13 +20,15 @@
  * dem Latenzbudget aus §8.
  *
  * NICHT enthalten, weil noch nicht gebaut:
- *   Phase 5  gate + Klassifikation  -> der Zweig wird geraten, nicht bestimmt
  *   Phase 7  Versand
  *   Phase 9  t_makler, t0, t_nachmieter
  */
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 import { loadRegistry, PHASE1_STAGES } from '../src/llm/registry.ts';
+import { runGate } from '../src/stages/gate.ts';
+import { isSendBranch } from '../src/lib/classify.ts';
+import { settleGrounding } from '../src/db/grounding.ts';
 import { runExtract, type Payload } from '../src/stages/extract.ts';
 import { researchFirma } from '../src/stages/research-firma.ts';
 import { loadProfile } from '../src/lib/profile.ts';
@@ -125,20 +123,17 @@ try {
   }
 } catch { /* kein Fixture-Gegenstück, egal */ }
 
-// ------------------------------------------------------------------ 2 gate
-rule('2  gate + Klassifikation');
-console.log('NICHT GEBAUT (Phase 5). Der Zweig wird unten aus harten Signalen geraten,');
-console.log('nicht bestimmt — und Betrugssignale werden gar nicht geprüft.');
-
-// -------------------------------------------------------- 3 Cache / research
-rule('3  Firmen-Cache');
+// -------------------------------------------------------- 2 Cache-Lookup
+// Muss vor dem Gate laufen: ein Cache-Eintrag ist ein hartes Signal (§7
+// Stufe 2) und geht als Kontext in den Gate-Aufruf.
+rule('2  Firmen-Cache');
 
 const db = openDb();
 const nameRaw = payload.provider.name_raw;
 let cached: Verwaltung | null = nameRaw ? findVerwaltung(db, nameRaw) : null;
 
 if (!nameRaw) {
-  console.log('Kein Anbietername im Payload — kein Lookup möglich, das wäre T0 (§8 Flow B).');
+  console.log('Kein Anbietername im Payload — kein Lookup möglich, das wird T0 (§8 Flow B).');
 } else if (cached) {
   console.log(`TREFFER (Flow A): ${cached.name_canonical}`);
   console.log(`  ${cached.email_vermietung ?? cached.email_general ?? 'keine Adresse'}  ·  ` +
@@ -146,7 +141,7 @@ if (!nameRaw) {
 } else {
   console.log(`MISS (Flow B): "${nameRaw}" ist nicht im Cache.`);
   if (!doResearch) {
-    console.log('Mit --research wird jetzt recherchiert (20 s Budget, kostet Grounding).');
+    console.log('Mit --research wird recherchiert (90 s Budget, Grounding im Freikontingent).');
   } else {
     let adapter;
     let timeoutMs: number;
@@ -168,10 +163,13 @@ if (!nameRaw) {
       },
       { timeoutMs, allowFallback: true },
     );
-    totalCost += res.llm.costUsd;
+    const settled = settleGrounding(db, res.llm.usage.searchQueries ?? 0);
+    const echt = res.llm.costUsd - settled.conservativeUsd + settled.groundingUsd;
+    totalCost += echt;
     totalMs += res.llm.ms;
     llmCalls++;
-    console.log(`${adapter.id}  ·  ${res.llm.ms} ms  ·  $${res.llm.costUsd.toFixed(6)}  ·  ${res.llm.usage.searchQueries ?? 0} Suchanfragen`);
+    console.log(`${adapter.id}  ·  ${res.llm.ms} ms  ·  $${echt.toFixed(6)}  ·  ` +
+      `${res.llm.usage.searchQueries ?? 0} Suchanfragen (${settled.freeRemaining} frei diesen Monat)`);
 
     if (!res.ok || !res.data) {
       console.log(`✖ ${res.llm.error?.kind}: ${res.llm.error?.message}`);
@@ -198,37 +196,56 @@ if (!nameRaw) {
   }
 }
 
-// ----------------------------------------------------------------- 4 Zweig
-rule('4  Zweig');
+// --------------------------------------------- 3 gate + Klassifikation
+rule('3  gate + Klassifikation');
 
-/**
- * Nur die harten Signale aus §7 Stufe 1, die reiner Code sind. Die
- * eigentliche Klassifikation macht das Gate (Phase 5) — bis dahin ist alles
- * hier eine Vermutung.
- */
-function guessBranch(): { branch: string; why: string } {
-  if (cached?.portal_only) return { branch: 'T0', why: 'Cache: portal_only' };
-  if (cached && cached.firm_type !== 'unknown') {
-    const map: Record<string, string> = {
-      verwaltung: 'T_VERWALTUNG', makler: 'T_MAKLER',
-      gesellschaft: 'T0', genossenschaft: 'T0', privat: 'T_PRIVAT',
-    };
-    return { branch: map[cached.firm_type] ?? 'T_VERWALTUNG', why: `Cache: firm_type=${cached.firm_type}` };
+let gateAdapter;
+let gateTimeout: number;
+try {
+  const registry = loadRegistry({ stages: PHASE1_STAGES });
+  gateAdapter = registry.generate('gate');
+  gateTimeout = registry.bindings.gate.timeoutMs;
+} catch (err) {
+  fail((err as Error).message);
+}
+
+const gate = await runGate(
+  gateAdapter,
+  { payload, pageText: capture.page_text, source: String(capture.source), cached },
+  { timeoutMs: gateTimeout },
+);
+totalCost += gate.llm.costUsd;
+totalMs += gate.llm.ms;
+llmCalls++;
+
+console.log(`${gateAdapter.id}  ·  ${gate.llm.ms} ms  ·  $${gate.llm.costUsd.toFixed(6)}`);
+if (!gate.ok) {
+  console.log(`✖ ${gate.llm.error?.kind}: ${gate.llm.error?.message}`);
+  console.log('Rückfall greift: T0, kein Versand (§8).');
+} else {
+  console.log(`\n  Betrugsrisiko: ${gate.risk}${gate.signals.length ? `  ·  ${gate.signals.join(', ')}` : ''}`);
+  console.log(`  Zweig:         ${gate.branch}  (${gate.branchSource}, Konfidenz ${gate.branchConfidence})`);
+  console.log(`  firm_type:     ${gate.verdict!.firm_type_guess}`);
+  if (gate.hardSignal) {
+    console.log(`  hartes Signal: ${gate.hardSignal.reason}${gate.hardSignal.decisive ? ' [entscheidend]' : ''}`);
   }
-  if (payload.provider.platform_private_flag === true) return { branch: 'T_PRIVAT', why: 'Portal kennzeichnet privat' };
-  if (capture.source === 'wg_gesucht') return { branch: 'T_NACHMIETER', why: 'Quelle wg_gesucht' };
-  if (!nameRaw) return { branch: 'T0', why: 'kein Anbietername' };
-  return { branch: 'T_VERWALTUNG', why: 'Rückfall — ohne Gate nicht bestimmbar' };
+  console.log(`  Begründung:    ${gate.verdict!.reasoning}`);
 }
+if (gate.note) console.log(`\n  Hinweis: ${gate.note}`);
 
-const { branch, why } = guessBranch();
-console.log(`${branch}   (${why})`);
+const branch = gate.branch;
+const wouldSend = isSendBranch(branch) && gate.risk !== 'high';
+console.log(`\n  Versandpfad: ${wouldSend ? 'ja' : 'NEIN'}` +
+  (branch === 'T0' ? '  (T0 ist kein Versandzweig, §9)' : '') +
+  (gate.risk === 'high' ? '  (Betrugsrisiko high, §9: nur Flag)' : ''));
+
+// ------------------------------------------------------- 4 Draft
 if (branch !== 'T_VERWALTUNG') {
-  console.log(`\n⚠ Das Template für ${branch} gibt es noch nicht (Phase 9 bzw. 10).`);
-  console.log('  Unten steht trotzdem T_VERWALTUNG, damit die Kette durchläuft.');
+  rule('4  Draft');
+  console.log(`Das Template für ${branch} gibt es noch nicht (Phase ${branch === 'T_PRIVAT' ? 10 : 9}).`);
+  console.log('Unten steht trotzdem T_VERWALTUNG, damit die Kette durchläuft.');
 }
 
-// ----------------------------------------------------------------- 5 Draft
 rule('5  Draft (T_VERWALTUNG, ohne LLM)');
 
 let profile;
@@ -246,11 +263,20 @@ for (const b of draft.blockers) console.log(`  ⚠ ${b}`);
 
 // ---------------------------------------------------------------- Bilanz
 rule('Bilanz');
-const budget = cached ? { flow: 'A', ms: 3000 } : { flow: 'B', ms: 25000 };
+// §8 gibt Flow A 3 s und Flow B 25 s. Flow B ist hier bewusst höher: die
+// Firmenrecherche darf 90 s (siehe src/llm/registry.ts), weil sie einmal pro
+// Firma läuft und ihr Ergebnis dauerhaft im Cache liegt.
+const budget = cached ? { flow: 'A', ms: 3_000, spec: 3_000 } : { flow: 'B', ms: 100_000, spec: 25_000 };
 console.log(`${llmCalls} Modellaufrufe  ·  ${totalMs} ms  ·  $${totalCost.toFixed(6)}`);
-console.log(`Flow ${budget.flow} erlaubt ${budget.ms} ms (§8) — ${totalMs <= budget.ms ? 'eingehalten' : 'ÜBERSCHRITTEN'}`);
-const fehlt = ['Gate (Phase 5)', 'Undo-Fenster und Versand (Phase 7)'];
+console.log(
+  `Flow ${budget.flow}: ${totalMs} ms von ${budget.ms} erlaubten` +
+  (budget.ms === budget.spec ? ` (§8)` : ` (§8 nennt ${budget.spec}, bewusst angehoben)`) +
+  ` — ${totalMs <= budget.ms ? 'eingehalten' : 'ÜBERSCHRITTEN'}`,
+);
+const fehlt = ['Undo-Fenster und Versand (Phase 7)'];
 if (branch !== 'T_VERWALTUNG') fehlt.push(`Template ${branch} (Phase ${branch === 'T_PRIVAT' ? 10 : 9})`);
-if (!cached) fehlt.push('ein Empfänger — ohne Cache-Treffer gibt es keine Adresse');
+if (!cached && isSendBranch(branch)) {
+  fehlt.push('ein Empfänger — ohne Cache-Treffer gibt es keine Adresse');
+}
 console.log(`\nFehlt bis zum echten Versand: ${fehlt.join(', ')}.`);
 db.close();

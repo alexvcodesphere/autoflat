@@ -5,7 +5,7 @@ Bewerbungsmail. Die maßgebliche Spec ist das Projektdokument; Verweise wie
 „§11" beziehen sich darauf. Leg sie als `docs/spec.md` ab, damit sie
 mitversioniert wird.
 
-**Stand: Phase 4 gebaut, Modelllauf steht aus.** Die Bauphasen stehen in der Spec, §14.
+**Stand: Phase 5 gebaut, Modelllauf steht aus.** Die Bauphasen stehen in der Spec, §14.
 
 ---
 
@@ -31,6 +31,8 @@ npm run llm:smoke           # echter Aufruf
 | `npm run draft:render` | T_VERWALTUNG aus gecachten Payloads, ohne Modell |
 | `npm run research:firma -- "Name"` | Firmenrecherche mit Grounding (§8 Flow B) |
 | `npm run grounding:check` | prüft, ob die Google-Suche tatsächlich feuert |
+| `npm run gate:fixtures` | Betrugsprüfung und Klassifikation über alle Fixtures |
+| `npm run pipeline -- <datei>` | die ganze Kette an einem Inserat |
 | `npm run seed:places` | füllt `seed_company` aus der Places API (§17) |
 | `npm run prewarm:batch` | nächste 15 Firmen für Cowork, `--stats` zeigt die Queue |
 | `npm run prewarm:import -- x.json` | Cowork-Ergebnis einlesen, `--quarantine` zeigt Offene |
@@ -67,7 +69,9 @@ data/payloads/         Gecachte Extraktionen, Eingabe für draft:render.
 src/db/verwaltung.ts   Firmen-Cache (§3), Konfidenz-Ordnung.
 src/db/seed.ts         Warteschlange fürs Vorwärmen + Quarantäne.
 src/lib/prewarm-import.ts  Validierung der Cowork-Ausgabe (§17).
-src/stages/research-firma.ts  Firmenrecherche, ein Grounding-Aufruf.
+src/stages/research-firma.ts  Firmenrecherche mit Grounding.
+src/stages/gate.ts     Betrugsprüfung + Klassifikation in einem Aufruf.
+src/lib/classify.ts    Harte Signale (§7 Stufe 1). Bewusst kein Regex-Klassifikator.
 docs/cowork-prewarm-prompt.md  Die Cowork-Aufgabe, mitversioniert.
 src/config/env.ts      .env-Zugriff an genau einer Stelle.
 src/db/                Verbindung + Schema.
@@ -298,6 +302,39 @@ Eine Berliner Bewerbung mit Münchner Absender wirft beim Empfänger eine Frage
 auf. Besser, sie steht beantwortet in der Mail, als dass sie unbeantwortet im
 Kopf bleibt. Der Satz steht als `hinweis_adresse` im Profil und ist frei
 formulierbar; fehlt er, entfällt die Zeile ersatzlos.
+
+## Phase 5 — Entscheidungen
+
+**Kein Regex-Klassifikator.** §7 verbietet ihn ausdrücklich, und die
+Begründung trägt: „Berger Immobilien GmbH" kann Makler oder Verwaltung sein,
+und „Hausverwaltung Schmidt" bricht jede Token-Regel. In `classify.ts` stehen
+deshalb nur Signale, die wirklich hart sind — ein Cache-Eintrag, eine
+Portal-Kennzeichnung, eine namentliche Liste kommunaler Gesellschaften.
+Alles Urteilhafte macht das Gate am Volltext.
+
+**Harte Signale kennen zwei Stärken.** `decisive: true` beendet die
+Klassifikation: ein `portal_only`-Eintrag, ein recherchierter `firm_type`,
+eine Genossenschaft. `decisive: false` ist ein starkes Indiz, dem das Gate
+widersprechen darf — aber nur mit `branch_confidence: high`. Beispiel: Das
+Portal kennzeichnet „von privat", der Text sagt „Nachmieter gesucht". Beides
+stimmt; der Zweig ist `T_NACHMIETER`, und das erkennt nur das Gate.
+
+**Signale als Codes, nicht als Freitext.** §11 skizziert `signals: ["..."]`.
+Ein kontrolliertes Vokabular (`prepayment_before_viewing`, `keys_by_mail`, …)
+ist testbar und in der UI konsistent; die Prosa steht in `reasoning`.
+
+**Zwei Signale sind allein schon `high`:** Vorkasse vor Besichtigung und
+Schlüsselversand. Für beide gibt es keine harmlose Erklärung. Umgekehrt
+mahnt der Prompt zur Vorsicht bei niedrigen Mieten — Altbestand mit
+Sanierungsbedarf und WBS-Bindung drücken den Preis in Berlin legitim.
+
+**Der Fallback ist T0.** Scheitert das Gate, gibt es keine Betrugsprüfung —
+dann kein Versand, Text zum Kopieren, ich bewerbe mich selbst. Ein
+entscheidendes hartes Signal bleibt gültig, aber `risk` steht auf `medium`
+statt `low`: ohne Prüfung wird nichts als harmlos durchgewinkt.
+
+**Das Behelfsstück in `scripts/pipeline.ts` ist weg.** Dort riet vorher eine
+`guessBranch()` den Zweig aus harten Signalen. Jetzt läuft das echte Gate.
 
 ## Das Vorwärmen wird nicht betrieben
 

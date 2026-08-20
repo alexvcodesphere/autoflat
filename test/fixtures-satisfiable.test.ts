@@ -210,8 +210,11 @@ for (const [name, handgelesen] of Object.entries(HANDGELESEN)) {
   });
 }
 
-test('jedes Fixture hat einen von Hand gelesenen Gegenpart', () => {
+test('jedes Fixture MIT Extraktions-Erwartung hat einen von Hand gelesenen Gegenpart', () => {
   for (const name of listFixtures()) {
+    const { expected } = loadFixture(name);
+    const hasExtractExpectation = Object.keys(expected).length > 0;
+    if (!hasExtractExpectation) continue;   // reine Gate-Fixtures
     assert.ok(name in HANDGELESEN, `Fixture ${name} fehlt in HANDGELESEN`);
   }
 });

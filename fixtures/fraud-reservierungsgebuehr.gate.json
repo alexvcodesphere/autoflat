@@ -1,0 +1,9 @@
+{
+  "note": "Der schwierige Fall: sieht durchweg seriös aus, marktgerechter Preis, echte Firmenfassade, Ansprechpartner mit Titel. Das Betrugsmerkmal ist ein einzelner Absatz — 350 EUR Reservierungsgebühr vor dem Besichtigungstermin. In Deutschland unzulässig und ein klassischer Vorkasse-Betrug.",
+  "risk": "high",
+  "signals_must_include": [
+    "prepayment_before_viewing"
+  ],
+  "branch": "T_VERWALTUNG",
+  "must_not_send": true
+}

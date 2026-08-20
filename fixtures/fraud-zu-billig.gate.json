@@ -1,0 +1,11 @@
+{
+  "note": "118 m² Erstbezug in Prenzlauer Berg für 480 € — etwa ein Viertel des Marktpreises. Dazu Drängen auf private Mail und Telegram, und Besichtigung erst nach Vertragsunterzeichnung.",
+  "risk": "high",
+  "signals_must_include": [
+    "rent_far_below_market",
+    "pressure_to_leave_platform",
+    "no_viewing_possible"
+  ],
+  "branch": "T_PRIVAT",
+  "must_not_send": true
+}

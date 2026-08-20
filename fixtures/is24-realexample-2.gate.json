@@ -1,0 +1,8 @@
+{
+  "note": "Zweites echtes Nachmietergesuch. 'Nachmieter für 2-Zimmer-Altbauwohnung ab 01.09. gesucht.'",
+  "risk": "low",
+  "signals_must_not_include": [
+    "prepayment_before_viewing",
+    "keys_by_mail"
+  ]
+}

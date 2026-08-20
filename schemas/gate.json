@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gate.v1.json",
+  "title": "Betrugs-Gate und Klassifikation (§7, §11)",
+  "description": "Ein Aufruf, zwei Aufgaben. Die Klassifikation kostet hier nichts extra, weil das Gate bei jedem Inserat ohnehin läuft.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["risk", "signals", "branch", "branch_confidence", "firm_type_guess", "reasoning"],
+  "properties": {
+    "risk": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "low = nichts Auffälliges. medium = ein Signal, das auch harmlos erklärbar ist. high = mehrere Signale oder ein eindeutiges (Vorkasse, Schlüsselversand)."
+    },
+    "signals": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "rent_far_below_market",
+          "prepayment_before_viewing",
+          "landlord_abroad",
+          "keys_by_mail",
+          "machine_translated",
+          "pressure_to_leave_platform",
+          "no_viewing_possible",
+          "identity_inconsistent",
+          "other"
+        ]
+      },
+      "description": "Die zutreffenden Signale als Code. Leeres Array bei risk low. Für alles, was in keine Kategorie passt, \"other\" verwenden und in reasoning erklären."
+    },
+    "branch": {
+      "type": "string",
+      "enum": ["T_VERWALTUNG", "T_MAKLER", "T_NACHMIETER", "T_PRIVAT", "T0"],
+      "description": "Welches Anschreiben passt. T_VERWALTUNG = Hausverwaltung verwaltet das Objekt. T_MAKLER = Makler vermittelt im Auftrag. T_NACHMIETER = der aktuelle Mieter sucht selbst einen Nachfolger. T_PRIVAT = Eigentümer vermietet selbst. T0 = kein Direktkanal möglich (kommunale Gesellschaft, Genossenschaft, oder Anbieter nicht bestimmbar)."
+    },
+    "branch_confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"],
+      "description": "high = der Text sagt es ausdrücklich. medium = mehrere Indizien zeigen in dieselbe Richtung. low = Vermutung. Bei low fragt die UI nach, statt zu raten."
+    },
+    "firm_type_guess": {
+      "type": "string",
+      "enum": ["verwaltung", "makler", "gesellschaft", "genossenschaft", "privat", "unknown"],
+      "description": "Was der Anbieter ist. Wird in den Firmen-Cache übernommen, wenn dort noch nichts steht — ab dem zweiten Inserat derselben Firma ist die Klassifikation dann ein Lookup."
+    },
+    "reasoning": {
+      "type": "string",
+      "description": "Zwei bis vier Sätze: welche Textstellen zu risk und branch geführt haben. Bei risk medium oder high die Fundstellen wörtlich zitieren."
+    }
+  }
+}

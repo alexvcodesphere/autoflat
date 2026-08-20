@@ -1,0 +1,12 @@
+{
+  "note": "Hausverwaltung, ausdrücklich: 'Wir verwalten dieses Objekt seit 2011 im Auftrag der Eigentümergemeinschaft.'",
+  "risk": "low",
+  "signals_must_not_include": [
+    "prepayment_before_viewing",
+    "keys_by_mail",
+    "landlord_abroad",
+    "rent_far_below_market"
+  ],
+  "branch": "T_VERWALTUNG",
+  "firm_type_guess": "verwaltung"
+}

@@ -38,11 +38,81 @@ export interface Fixture {
   expected: FixtureExpectation;
 }
 
+/** Beidateien zu einem Fixture. Alles andere ist ein Fixture. */
+const SIDECAR_SUFFIXES = ['.expected.json', '.gate.json'];
+
 export function listFixtures(): string[] {
   return readdirSync(FIXTURE_DIR)
-    .filter((f) => f.endsWith('.json') && !f.endsWith('.expected.json'))
+    .filter((f) => f.endsWith('.json') && !SIDECAR_SUFFIXES.some((sfx) => f.endsWith(sfx)))
     .map((f) => f.slice(0, -'.json'.length))
     .sort();
+}
+
+/**
+ * Erwartungen an das Gate-Urteil. Wie bei checkPayload absichtlich kein
+ * Soll-Objekt, sondern nur die Aussagen, die zählen.
+ */
+export interface GateExpectation {
+  note?: string;
+  risk?: 'low' | 'medium' | 'high';
+  /** Mindestens diese Signale müssen erkannt werden. */
+  signals_must_include?: string[];
+  /** Diese Signale dürfen NICHT gemeldet werden — gegen Fehlalarme. */
+  signals_must_not_include?: string[];
+  branch?: string;
+  firm_type_guess?: string;
+  /** true = dieses Inserat darf unter keinen Umständen in den Versandpfad. */
+  must_not_send?: boolean;
+}
+
+export function loadGateExpectation(name: string): GateExpectation | null {
+  try {
+    return JSON.parse(
+      readFileSync(resolve(FIXTURE_DIR, `${name}.gate.json`), 'utf8'),
+    ) as GateExpectation;
+  } catch {
+    return null;
+  }
+}
+
+export interface GateCheckInput {
+  risk: string;
+  signals: string[];
+  branch: string;
+  firmTypeGuess?: string;
+  wouldSend: boolean;
+}
+
+export function checkGate(actual: GateCheckInput, expected: GateExpectation): CheckResult {
+  const failures: string[] = [];
+  let passed = 0;
+
+  if (expected.risk !== undefined) {
+    if (actual.risk === expected.risk) passed++;
+    else failures.push(`risk: erwartet ${expected.risk}, bekommen ${actual.risk}`);
+  }
+  for (const signal of expected.signals_must_include ?? []) {
+    if (actual.signals.includes(signal)) passed++;
+    else failures.push(`Signal "${signal}" nicht erkannt (erkannt: ${actual.signals.join(', ') || 'keine'})`);
+  }
+  for (const signal of expected.signals_must_not_include ?? []) {
+    if (!actual.signals.includes(signal)) passed++;
+    else failures.push(`Signal "${signal}" ist ein Fehlalarm`);
+  }
+  if (expected.branch !== undefined) {
+    if (actual.branch === expected.branch) passed++;
+    else failures.push(`branch: erwartet ${expected.branch}, bekommen ${actual.branch}`);
+  }
+  if (expected.firm_type_guess !== undefined) {
+    if (actual.firmTypeGuess === expected.firm_type_guess) passed++;
+    else failures.push(`firm_type_guess: erwartet ${expected.firm_type_guess}, bekommen ${actual.firmTypeGuess}`);
+  }
+  if (expected.must_not_send === true) {
+    if (!actual.wouldSend) passed++;
+    else failures.push('Inserat waere in den Versandpfad gegangen — das ist der schlimmste Fehler hier');
+  }
+
+  return { passed, failures };
 }
 
 export function loadFixture(name: string): Fixture {

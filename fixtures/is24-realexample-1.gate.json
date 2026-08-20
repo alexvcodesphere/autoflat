@@ -1,0 +1,8 @@
+{
+  "note": "Echtes Nachmietergesuch von privat. Titel: 'Nachmieter für wunderschöne 2-Zimmer-Altbauwohnung in Berlin-Pankow gesucht'. Portal kennzeichnet 'von privat' — das harte Signal zeigt auf T_PRIVAT, der Text auf T_NACHMIETER. Das Gate darf widersprechen, wenn es sich sicher ist.",
+  "risk": "low",
+  "signals_must_not_include": [
+    "prepayment_before_viewing",
+    "keys_by_mail"
+  ]
+}

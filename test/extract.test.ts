@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { createMockGenerateAdapter } from '../src/llm/providers/mock-generate.ts';
 import { runExtract, finalizePayload, buildExtractInput, type Payload } from '../src/stages/extract.ts';
 import { externalIdFromUrl, sourceFromUrl, type CaptureInput } from '../src/lib/capture.ts';
-import { listFixtures, loadFixture, checkPayload } from '../src/lib/fixtures.ts';
+import { listFixtures, loadFixture, checkPayload, loadGateExpectation } from '../src/lib/fixtures.ts';
 import { loadSchema, validateAgainst } from '../src/llm/validate.ts';
 import { toGeminiJsonSchema } from '../src/llm/providers/gemini-schema.ts';
 
@@ -234,17 +234,36 @@ test('die drei geforderten Fixtures liegen vor', () => {
   assert.ok(names.some((n) => n.startsWith('website')), 'Website-Fixture fehlt');
 });
 
-test('jedes Fixture ist wohlgeformt und hat Zusicherungen', () => {
+test('jedes Fixture ist wohlgeformt und hat irgendeine Zusicherung', () => {
   for (const name of listFixtures()) {
     const f = loadFixture(name);
     assert.equal(f.capture.capture_version, 'v1', `${name}: capture_version`);
     assert.ok(f.capture.page_text.length > 200, `${name}: page_text zu kurz`);
     assert.equal('html_snapshot' in f.capture, false, `${name}: Snapshot gehoert nicht ins Fixture`);
-    const n =
+
+    // Ein Fixture prueft die Extraktion, das Gate, oder beides — aber es darf
+    // nicht ohne jede Zusicherung herumliegen.
+    const extractAssertions =
       Object.keys(f.expected.must_equal ?? {}).length +
       (f.expected.must_be_null ?? []).length +
       (f.expected.must_not_be_null ?? []).length;
-    assert.ok(n >= 5, `${name}: nur ${n} Zusicherungen`);
+    const gate = loadGateExpectation(name);
+    assert.ok(
+      extractAssertions >= 5 || gate !== null,
+      `${name}: weder Extraktions- noch Gate-Erwartungen`,
+    );
+  }
+});
+
+test('Betrugs-Fixtures pruefen das Gate, nicht die Extraktion', () => {
+  const fraud = listFixtures().filter((n) => n.startsWith('fraud-'));
+  assert.ok(fraud.length >= 3, `§14 Phase 5 verlangt 3 Betrugs-Fixtures, gefunden: ${fraud.length}`);
+  for (const name of fraud) {
+    const gate = loadGateExpectation(name);
+    assert.ok(gate, `${name}: keine Gate-Erwartung`);
+    assert.equal(gate!.risk, 'high', `${name}: muss als high eingestuft werden`);
+    assert.ok((gate!.signals_must_include ?? []).length > 0, `${name}: keine erwarteten Signale`);
+    assert.equal(gate!.must_not_send, true, `${name}: muss vom Versand ausgeschlossen sein`);
   }
 });
 

@@ -1,0 +1,11 @@
+{
+  "note": "Der Kern des Akzeptanzkriteriums: Makler, nicht Verwaltung. Erkennbar an 'geprüftes IVD-Verbandsmitglied', 'Mieten Sie direkt beim Spezialisten' und dem Verkaufsangebot im selben Text. Der Firmenname 'habitare Immobilien' allein gibt es nicht her — genau der Fall, für den §7 den Regex-Klassifikator verwirft.",
+  "risk": "low",
+  "signals_must_not_include": [
+    "prepayment_before_viewing",
+    "keys_by_mail",
+    "rent_far_below_market"
+  ],
+  "branch": "T_MAKLER",
+  "firm_type_guess": "makler"
+}
