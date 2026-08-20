@@ -8,7 +8,7 @@
  * schon festlegt: Die Betrugsprüfung ist davon unabhängig.
  */
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { fromRoot } from '../lib/paths.ts';
 import type { GenerateAdapter, LlmResult } from '../llm/types.ts';
 import { loadSchema } from '../llm/validate.ts';
 import { logLlmCall } from '../llm/log.ts';
@@ -16,7 +16,7 @@ import type { Payload } from './extract.ts';
 import type { Verwaltung } from '../db/verwaltung.ts';
 import { hardSignal, type Branch, type BranchConfidence, type HardSignal } from '../lib/classify.ts';
 
-const PROMPT_PATH = resolve(import.meta.dirname, '../../prompts/gate.md');
+const PROMPT_PATH = fromRoot('prompts', 'gate.md');
 
 export type FraudRisk = 'low' | 'medium' | 'high';
 export type FraudSignal =

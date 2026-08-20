@@ -16,10 +16,11 @@
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { fromRoot } from './paths.ts';
 import type { CaptureInput } from './capture.ts';
 import type { Payload } from '../stages/extract.ts';
 
-const FIXTURE_DIR = resolve(import.meta.dirname, '../../fixtures');
+const FIXTURE_DIR = fromRoot('fixtures');
 
 export interface FixtureExpectation {
   note?: string;

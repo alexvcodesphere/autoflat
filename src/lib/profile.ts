@@ -2,9 +2,9 @@
  * Liest prompts/profil.md (§16). Geht nie an ein Modell.
  */
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { fromRoot } from './paths.ts';
 
-const PROFILE_PATH = resolve(import.meta.dirname, '../../prompts/profil.md');
+const PROFILE_PATH = fromRoot('prompts', 'profil.md');
 
 export interface ProfileLink {
   label: string;

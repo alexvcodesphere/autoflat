@@ -1,5 +1,5 @@
 {
-  "name": "wohnungsbot",
+  "name": "autoflat",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -7,6 +7,9 @@
     "node": ">=22.18"
   },
   "scripts": {
+    "dev": "npm --prefix web run dev",
+    "build": "npm --prefix web run build",
+    "start": "npm --prefix web run start",
     "db:init": "node scripts/db-init.ts",
     "db:reset": "node scripts/db-init.ts --force",
     "llm:smoke": "node scripts/smoke-llm.ts",
@@ -20,17 +23,14 @@
     "research:firma": "node scripts/research-firma.ts",
     "pipeline": "node scripts/pipeline.ts",
     "grounding:check": "node scripts/grounding-check.ts",
-    "gate:fixtures": "node scripts/gate-fixtures.ts",
-    "api": "node scripts/serve.ts"
+    "gate:fixtures": "node scripts/gate-fixtures.ts"
   },
   "dependencies": {
-    "@fastify/cors": "^11.3.0",
     "@google/genai": "^2.18.0",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "better-sqlite3": "^13.0.3",
-    "dotenv": "^17.4.2",
-    "fastify": "^5.12.1"
+    "dotenv": "^17.4.2"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",

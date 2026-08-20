@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * npm run db:init          -> legt data/wohnungsbot.db an (idempotent)
+ * npm run db:init          -> legt data/autoflat.db an (idempotent)
  * npm run db:reset         -> löscht die DB vorher (fragt nicht nach)
  */
 import { existsSync, rmSync } from 'node:fs';

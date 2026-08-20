@@ -1,13 +1,14 @@
 import Database from 'better-sqlite3';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { fromRoot } from '../lib/paths.ts';
 import { env } from '../config/env.ts';
 
 export type Db = Database.Database;
 
 export const SCHEMA_VERSION = 3;
 
-const SCHEMA_PATH = resolve(import.meta.dirname, '../../db/schema.sql');
+const SCHEMA_PATH = fromRoot('db', 'schema.sql');
 
 /**
  * Öffnet die DB und legt sie beim ersten Aufruf an. Das Schema ist

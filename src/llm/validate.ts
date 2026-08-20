@@ -7,11 +7,12 @@
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { fromRoot } from '../lib/paths.ts';
 import { Ajv2020, type ValidateFunction } from 'ajv/dist/2020.js';
 import formatsPlugin from 'ajv-formats';
 import type { JsonSchema } from './types.ts';
 
-const SCHEMA_DIR = resolve(import.meta.dirname, '../../schemas');
+const SCHEMA_DIR = fromRoot('schemas');
 
 // Draft 2020-12: die Schemas nutzen prefixItems und deklarieren $schema.
 const ajv = new Ajv2020({ allErrors: true, strict: false, allowUnionTypes: true });

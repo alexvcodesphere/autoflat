@@ -1,11 +1,11 @@
-# Wohnungsbot
+# autoflat
 
 Aus einer Wohnungsanzeige in Berlin wird eine sendefertige deutsche
 Bewerbungsmail. Die maßgebliche Spec ist das Projektdokument; Verweise wie
 „§11" beziehen sich darauf. Leg sie als `docs/spec.md` ab, damit sie
 mitversioniert wird.
 
-**Stand: Phase 5 gebaut, Modelllauf steht aus.** Die Bauphasen stehen in der Spec, §14.
+**Stand: Phase 6 abgeschlossen** — erste Ende-zu-Ende-Version. Die Bauphasen stehen in der Spec, §14.
 
 ---
 
@@ -13,12 +13,16 @@ mitversioniert wird.
 
 ```bash
 npm install
+npm install --prefix web
 cp .env.example .env        # GEMINI_API_KEY eintragen
 npm run db:init
 npm test
-npm run llm:smoke -- --mock # ohne API-Key
-npm run llm:smoke           # echter Aufruf
+npm run dev                 # UI auf http://localhost:3000
 ```
+
+Die Oberfläche liegt als Next-App unter `web/` (React, Tailwind, shadcn/ui)
+und importiert den Node-Teil aus `src/` direkt — kein HTTP zwischen UI und
+Logik. `npm run dev` im Wurzelverzeichnis startet sie.
 
 | Befehl | Zweck |
 |---|---|
@@ -32,7 +36,8 @@ npm run llm:smoke           # echter Aufruf
 | `npm run research:firma -- "Name"` | Firmenrecherche mit Grounding (§8 Flow B) |
 | `npm run grounding:check` | prüft, ob die Google-Suche tatsächlich feuert |
 | `npm run gate:fixtures` | Betrugsprüfung und Klassifikation über alle Fixtures |
-| `npm run pipeline -- <datei>` | die ganze Kette an einem Inserat |
+| `npm run pipeline -- <datei>` | die ganze Kette an einem Inserat (CLI) |
+| `npm run dev` | die UI |
 | `npm run seed:places` | füllt `seed_company` aus der Places API (§17) |
 | `npm run prewarm:batch` | nächste 15 Firmen für Cowork, `--stats` zeigt die Queue |
 | `npm run prewarm:import -- x.json` | Cowork-Ergebnis einlesen, `--quarantine` zeigt Offene |
@@ -302,6 +307,110 @@ Eine Berliner Bewerbung mit Münchner Absender wirft beim Empfänger eine Frage
 auf. Besser, sie steht beantwortet in der Mail, als dass sie unbeantwortet im
 Kopf bleibt. Der Satz steht als `hinweis_adresse` im Profil und ist frei
 formulierbar; fehlt er, entfällt die Zeile ersatzlos.
+
+## Phase 6 — Next statt Fastify, und was das kostete
+
+§12 schreibt vor: „Server-rendered plus SSE, **kein separater
+Frontend-Build**. Ein Port, lokal." Umgesetzt ist stattdessen eine Next-App
+mit shadcn/ui unter `web/`. Bewusste Abweichung; der Grund ist die
+Oberfläche, die §12 selbst verlangt — eine editierbare Firmen-Tabelle, ein
+laufender Countdown, Zustands-Badges — und die von Hand gebaut mehr Code
+wäre als der Build-Schritt kostet.
+
+**Nicht zwei Prozesse.** Der erste Entwurf war Fastify-API plus Next-UI, die
+über HTTP redeten. Das war Aufwand ohne Gewinn: Server Components lesen
+SQLite direkt, Server Actions ersetzen die PATCH-Endpunkte, und doppelte
+Typen entfallen. `src/service/server.ts` und `scripts/serve.ts` sind gelöscht;
+`handleCapture()` blieb als testbare Funktion übrig, die der Route Handler
+und die Tests gleichermaßen aufrufen.
+
+### Drei Fehler, eine Ursache
+
+Die Migration hat dreimal dasselbe Problem in verschiedener Verkleidung
+gezeigt — **Pfade, die relativ zum Modul oder zum Arbeitsverzeichnis
+aufgelöst werden**:
+
+| Symptom | Ursache |
+|---|---|
+| `ERR_INVALID_ARG_TYPE: paths[0] undefined` | `import.meta.dirname` ist im gebündelten Code `undefined` (9 Module) |
+| „STAGE_EXTRACT fehlt in .env" trotz vorhandener Datei | dotenv suchte `web/.env` statt `./.env` |
+| Firmen-Cache leer, obwohl gefüllt | Next legte eine zweite DB unter `web/data/` an |
+
+Alle drei behoben durch `src/lib/paths.ts`: sucht von `process.cwd()` aufwärts
+nach `db/schema.sql` und liefert die Projektwurzel. Die CLI läuft im Repo,
+Next in `web/` — beide finden dieselben Dateien.
+
+Der Nebeneffekt rechtfertigt die Änderung auch ohne Next: Vorher trug jedes
+Modul seine eigene `../../`-Tiefe. Wer eine Datei verschoben hätte, hätte
+still einen Dateizugriff gebrochen.
+
+**Was nicht das Problem war:** die `.ts`-Endungen in den Imports. Turbopack
+löst sie auf, TypeScript braucht dafür eine Zeile
+(`allowImportingTsExtensions`). Ich hatte den Aufwand erst auf 147 Zeilen
+geschätzt, dann auf eine — beides falsch.
+
+### Schriften liegen im Repo
+
+`next/font/google` lädt zur Build-Zeit von `fonts.googleapis.com`. Für ein
+Werkzeug, das lokal läuft, ist eine Build-Zeit-Abhängigkeit von einem fremden
+CDN ein Fehler, der zur ungünstigsten Zeit auffällt. Die drei Schriften
+(Geist, Geist Mono, Noto Serif) liegen als `.woff2` unter `web/app/fonts/`
+und werden über `next/font/local` geladen. Gleiches Aussehen, Build ohne Netz.
+
+### Die UI wurde einmal verworfen
+
+Die erste Fassung war ein Admin-Dashboard: drei Kennzahl-Karten oben, darunter
+eine Tabelle mit sechs Metadaten-Spalten, der Draft als Monospace-Textfeld.
+Das Urteil war „man checkt nicht, wie man vorankommt" — und es war richtig.
+
+Die Diagnose lohnt das Festhalten, weil sie nichts mit der
+Komponentenbibliothek zu tun hatte:
+
+| Fehler | Warum er einer war |
+|---|---|
+| Kennzahlen als Erstes | Sie helfen beim Handeln nicht. Die Frage ist immer: geht diese Mail raus? |
+| Tabelle mit 6 Spalten | Zweig, Risiko und Modus als drei gleich aussehende Pillen — man musste sie erst zusammenrechnen |
+| Leerer Zustand mit Knopf zur nächsten Seite | Wenn nichts zu entscheiden ist, ist Einfügen die einzige Handlung. Also gehört das Feld dorthin |
+| Draft als Textfeld | Ob eine Mail gut ist, entscheidet man durch Lesen, nicht durch Editieren |
+| Ablauf endete unsichtbar | Es gibt keinen Versand — das muss dastehen, sonst wirkt es kaputt statt unfertig |
+| Alles `text-xs` | Aus dem Preset übernommen statt überschrieben |
+
+Jetzt: pro Inserat eine Karte mit einer Bereitschaftszeile
+(`components/readiness.tsx`), die aus Zweig, Risiko, Empfänger und
+Versandmodus **einen** Satz macht — „Anschreiben bereit",
+„Betrugsverdacht — geht nicht raus", „Braucht deine ausdrückliche Freigabe".
+Der Draft steht in einem Postfach-Rahmen mit An und Betreff. Ein Pfad
+`Erfasst → Geprüft → Freigegeben (Phase 7) → Gesendet (Phase 7)` zeigt, wo
+der Ablauf heute endet. Kosten und Kontingente in einer Fußzeile.
+
+Die Firmen-Ansicht wurde eigens noch einmal verworfen. Sie war eine Tabelle
+mit neun Spalten dauerhaft editierbarer Eingabefelder — und zeigte den
+**Normalisierungsschlüssel als Überschrift** (`habitare ivd
+immobilienmanagement und standortberatung inhaber christian kurtz`), während
+der echte Name klein und grau darunter stand. Die E-Mail-Spalten waren so
+schmal, dass `info@.` dastand, und Konfidenz wie Aktionen lagen außerhalb des
+Bildes. Ausgerechnet das, weswegen man die Seite öffnet, war unlesbar.
+
+Jetzt gruppiert nach Bedarf: zurückgehaltene Importzeilen mit Übernehmen und
+Verwerfen (§17 verlangt den Klick), dann „Brauchen einen Blick" — keine
+Adresse, Konfidenz unter `high`, unbestimmte Art oder eine zurückgekommene
+Mail —, dann „Erledigt" leiser. Adressen in voller Breite, Bearbeiten auf
+Klick. Der interne Schlüssel steht klein im Bearbeitungsformular, wo er
+hingehört.
+
+Hell und dunkel funktionieren beide, umschaltbar im Kopf oder mit Taste `D`.
+Voraussetzung dafür ist, ausschließlich die semantischen Farbmarken zu
+benutzen (`bg-card`, `text-muted-foreground`, `text-destructive`) und nie
+eine feste Farbe.
+
+### Was Phase 6 noch nicht kann
+
+`queued` und `sent` fehlen im Zustandsautomaten der UI — es gibt keinen
+Approve- und keinen Abbrechen-Knopf für ein laufendes Undo-Fenster, weil
+nichts gesendet wird. Solange kein Versand existiert, wäre ein solcher Knopf
+eine Lüge. Das ist Phase 7, zusammen mit dem Worker-Prozess für die Crons aus
+§10 (Undo im Sekundentakt, Reply-Poll alle 15 Minuten, Nudge-Timer) — die
+haben in Next keinen Platz.
 
 ## payload.json ist bei v2 — und warum
 

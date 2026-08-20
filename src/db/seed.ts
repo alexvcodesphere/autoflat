@@ -183,3 +183,34 @@ export function openQuarantine(db: Db): Array<{
     created_at: r.created_at,
   }));
 }
+
+/**
+ * §17: "Quarantänezeilen erscheinen in der Firmen-Ansicht zur Sichtprüfung.
+ * Erst mein Klick schreibt sie nach `verwaltung`."
+ */
+export interface QuarantineRow {
+  id: number;
+  seed_id: number | null;
+  name_input: string;
+  name_canonical: string | null;
+  payload: Record<string, unknown>;
+  reasons: string[];
+  created_at: string;
+}
+
+export function getQuarantine(db: Db, id: number): QuarantineRow | null {
+  const row = db.prepare(`SELECT * FROM prewarm_quarantine WHERE id = ?`).get(id) as
+    | { id: number; seed_id: number | null; name_input: string; name_canonical: string | null;
+        payload: string; reasons: string; created_at: string }
+    | undefined;
+  if (!row) return null;
+  return {
+    ...row,
+    payload: JSON.parse(row.payload) as Record<string, unknown>,
+    reasons: JSON.parse(row.reasons) as string[],
+  };
+}
+
+export function closeQuarantine(db: Db, id: number, status: 'accepted' | 'rejected'): void {
+  db.prepare(`UPDATE prewarm_quarantine SET status = ? WHERE id = ?`).run(status, id);
+}

@@ -5,7 +5,7 @@
  * pro Inserat sind extract und gate; der Draft entsteht hier deterministisch.
  */
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { fromRoot } from '../lib/paths.ts';
 import type { Payload } from '../stages/extract.ts';
 import type { Profile } from '../lib/profile.ts';
 import { renderTemplate, countWords } from './template.ts';
@@ -14,7 +14,7 @@ import {
   formatEuro, formatDate, isRealExternalId,
 } from './german.ts';
 
-const TEMPLATE_PATH = resolve(import.meta.dirname, '../../prompts/t_verwaltung.md');
+const TEMPLATE_PATH = fromRoot('prompts', 't_verwaltung.md');
 
 /**
  * ABWEICHUNG VON §13: dort stehen 100 Wörter.

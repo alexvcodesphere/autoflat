@@ -5,7 +5,7 @@
  * danach hängt an ihrem Ergebnis.
  */
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { fromRoot } from '../lib/paths.ts';
 import type { GenerateAdapter, LlmResult } from '../llm/types.ts';
 import { loadSchema } from '../llm/validate.ts';
 import { logLlmCall } from '../llm/log.ts';
@@ -73,7 +73,7 @@ export interface ExtractResult {
   llm: LlmResult<Payload>;
 }
 
-const PROMPT_PATH = resolve(import.meta.dirname, '../../prompts/extract.md');
+const PROMPT_PATH = fromRoot('prompts', 'extract.md');
 
 let systemPrompt: string | null = null;
 function loadSystemPrompt(): string {

@@ -3,10 +3,10 @@
  * Adaptercode.
  */
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { fromRoot } from '../lib/paths.ts';
 import type { LlmUsage } from './types.ts';
 
-const PRICING_PATH = resolve(import.meta.dirname, '../../config/pricing.json');
+const PRICING_PATH = fromRoot('config', 'pricing.json');
 
 interface Tier {
   upToInputTokens: number | null;

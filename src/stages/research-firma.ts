@@ -6,12 +6,12 @@
  * einzige Zweck dieses Zweigs.
  */
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { fromRoot } from '../lib/paths.ts';
 import type { LlmResult, ResearchAdapter } from '../llm/types.ts';
 import { loadSchema } from '../llm/validate.ts';
 import { logLlmCall } from '../llm/log.ts';
 
-const PROMPT_PATH = resolve(import.meta.dirname, '../../prompts/research_firma.md');
+const PROMPT_PATH = fromRoot('prompts', 'research_firma.md');
 
 export type FirmType = 'verwaltung' | 'makler' | 'gesellschaft' | 'genossenschaft' | 'privat' | 'unknown';
 export type Confidence = 'high' | 'medium' | 'low' | 'none';
