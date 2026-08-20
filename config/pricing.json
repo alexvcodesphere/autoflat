@@ -1,0 +1,211 @@
+{
+  "$comment": [
+    "Preise in USD pro 1 Mio. Tokens. Gehören NICHT in den Adaptercode (§11).",
+    "Geprüft am 2026-08-20 gegen https://ai.google.dev/gemini-api/docs/pricing.",
+    "periods: das erste Intervall, das 'now' enthält, gewinnt.",
+    "tiers: erster Eintrag, dessen upToInputTokens >= promptTokens (null = offen).",
+    "provisional=true markiert einen Preis, der noch nicht auf der Preisseite",
+    "stand und aus einer Ankündigung abgeleitet ist — vor dem Stichtag prüfen.",
+    "Cache-Treffer werden derzeit zum vollen Input-Preis abgerechnet: die",
+    "verbilligten Cache-Raten sind hier nicht hinterlegt, die Schätzung liegt",
+    "damit zu hoch statt zu niedrig.",
+    "Geprueft gegen die englische UND die deutsche Fassung der Preisseite. Die lokalisierten Seiten hinken nach: gemini-3.7-flash (Start 13.08.2026) fehlt dort am 20.08.2026 noch komplett.",
+    "Audio-Input hat bei mehreren Modellen einen eigenen, hoeheren Satz. Nicht modelliert — dieses System schickt ausschliesslich Text."
+  ],
+  "currency": "USD",
+  "verifiedAt": "2026-08-20",
+  "groundingGroups": {
+    "gemini-3.x": {
+      "freeQueries": 5000,
+      "freePeriod": "month",
+      "usdPer1000Queries": 14,
+      "note": "Kontingent wird über alle Gemini-3.x-Modelle geteilt."
+    },
+    "gemini-2.5": {
+      "freeQueries": 1500,
+      "freePeriod": "day",
+      "usdPer1000Queries": 35
+    }
+  },
+  "models": {
+    "gemini-3.7-flash": {
+      "provider": "gemini",
+      "groundingGroup": "gemini-3.x",
+      "periods": [
+        {
+          "from": "1970-01-01",
+          "until": "2026-12-31",
+          "note": "Einfuehrungspreis bis 31.12.2026 (Modellstart 13.08.2026).",
+          "tiers": [
+            {
+              "upToInputTokens": null,
+              "inputPerM": 0.75,
+              "outputPerM": 3.75
+            }
+          ]
+        },
+        {
+          "from": "2027-01-01",
+          "until": null,
+          "provisional": true,
+          "note": "Weiterhin vorlaeufig: die Preisseite nennt nur das Ende des Einfuehrungspreises. Gestuetzt wird der Wert davon, dass 3.6 Flash nach Ablauf seines Einfuehrungspreises genau bei 1.50/7.50 liegt — also der Verdopplung, die die Spec §11 nennt.",
+          "tiers": [
+            {
+              "upToInputTokens": null,
+              "inputPerM": 1.5,
+              "outputPerM": 7.5
+            }
+          ]
+        }
+      ]
+    },
+    "gemini-3.6-flash": {
+      "provider": "gemini",
+      "groundingGroup": "gemini-3.x",
+      "periods": [
+        {
+          "from": "1970-01-01",
+          "until": null,
+          "note": "Normalpreis. Der Einfuehrungspreis 0.75/3.75 lief mit dem Start von 3.7 Flash aus.",
+          "tiers": [
+            {
+              "upToInputTokens": null,
+              "inputPerM": 1.5,
+              "outputPerM": 7.5
+            }
+          ]
+        }
+      ]
+    },
+    "gemini-3.5-flash": {
+      "provider": "gemini",
+      "groundingGroup": "gemini-3.x",
+      "periods": [
+        {
+          "from": "1970-01-01",
+          "until": null,
+          "tiers": [
+            {
+              "upToInputTokens": null,
+              "inputPerM": 1.5,
+              "outputPerM": 9.0
+            }
+          ]
+        }
+      ]
+    },
+    "gemini-3.5-flash-lite": {
+      "provider": "gemini",
+      "groundingGroup": "gemini-3.x",
+      "periods": [
+        {
+          "from": "1970-01-01",
+          "until": null,
+          "tiers": [
+            {
+              "upToInputTokens": null,
+              "inputPerM": 0.3,
+              "outputPerM": 2.5
+            }
+          ]
+        }
+      ]
+    },
+    "gemini-3.1-flash-lite": {
+      "provider": "gemini",
+      "groundingGroup": "gemini-3.x",
+      "periods": [
+        {
+          "from": "1970-01-01",
+          "until": null,
+          "note": "Nur Text/Bild/Video. Audio-Input kostet 0.50/M — hier nicht modelliert, wir senden nur Text.",
+          "tiers": [
+            {
+              "upToInputTokens": null,
+              "inputPerM": 0.25,
+              "outputPerM": 1.5
+            }
+          ]
+        }
+      ]
+    },
+    "gemini-3.1-pro-preview": {
+      "provider": "gemini",
+      "groundingGroup": "gemini-3.x",
+      "periods": [
+        {
+          "from": "1970-01-01",
+          "until": null,
+          "tiers": [
+            {
+              "upToInputTokens": 200000,
+              "inputPerM": 2.0,
+              "outputPerM": 12.0
+            },
+            {
+              "upToInputTokens": null,
+              "inputPerM": 4.0,
+              "outputPerM": 18.0
+            }
+          ]
+        }
+      ]
+    },
+    "gemini-2.5-flash": {
+      "provider": "gemini",
+      "groundingGroup": "gemini-2.5",
+      "periods": [
+        {
+          "from": "1970-01-01",
+          "until": null,
+          "tiers": [
+            {
+              "upToInputTokens": null,
+              "inputPerM": 0.3,
+              "outputPerM": 2.5
+            }
+          ]
+        }
+      ]
+    },
+    "gemini-2.5-flash-lite": {
+      "provider": "gemini",
+      "groundingGroup": "gemini-2.5",
+      "periods": [
+        {
+          "from": "1970-01-01",
+          "until": null,
+          "tiers": [
+            {
+              "upToInputTokens": null,
+              "inputPerM": 0.1,
+              "outputPerM": 0.4
+            }
+          ]
+        }
+      ]
+    },
+    "gemini-2.5-pro": {
+      "provider": "gemini",
+      "groundingGroup": "gemini-2.5",
+      "periods": [
+        {
+          "from": "1970-01-01",
+          "until": null,
+          "tiers": [
+            {
+              "upToInputTokens": 200000,
+              "inputPerM": 1.25,
+              "outputPerM": 10.0
+            },
+            {
+              "upToInputTokens": null,
+              "inputPerM": 2.5,
+              "outputPerM": 15.0
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

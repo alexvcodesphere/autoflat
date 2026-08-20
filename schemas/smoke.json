@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "smoke.json",
+  "title": "Phase-1-Rauchtest",
+  "description": "Kein Produktionsschema. Prüft die Adapterkette: nullable Felder, enum, array, und ein Keyword (minLength), das Gemini nicht kennt und deshalb nur von ajv erzwungen wird.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["external_id", "provider_name", "rooms", "cold_rent", "district", "wbs_required", "features", "firm_type_guess"],
+  "properties": {
+    "external_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Objekt- oder Inseratsnummer, exakt wie im Text."
+    },
+    "provider_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Name des Anbieters, exakt wie im Text."
+    },
+    "rooms": { "type": ["number", "null"], "description": "Zimmerzahl, null wenn nicht genannt." },
+    "cold_rent": { "type": ["number", "null"], "description": "Kaltmiete in Euro, null wenn nicht genannt." },
+    "district": { "type": ["string", "null"], "description": "Berliner Ortsteil, null wenn nicht genannt." },
+    "wbs_required": { "type": ["boolean", "null"], "description": "WBS erforderlich? null wenn nicht genannt." },
+    "features": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Ausstattungsmerkmale, leeres Array wenn keine genannt."
+    },
+    "firm_type_guess": {
+      "type": "string",
+      "enum": ["verwaltung", "makler", "gesellschaft", "genossenschaft", "privat", "unknown"],
+      "description": "Art des Anbieters. unknown, wenn der Text es nicht hergibt."
+    }
+  }
+}

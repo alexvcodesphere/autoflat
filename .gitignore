@@ -1,0 +1,9 @@
+node_modules/
+.npm-cache/
+# maschinenspezifisch: Umgehung fuer den root-eigenen npm-Cache, siehe README
+.npmrc
+.env
+data/
+!data/.gitkeep
+*.log
+.DS_Store
