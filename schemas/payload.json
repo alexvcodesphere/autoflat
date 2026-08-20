@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "payload.v1.json",
+  "$id": "payload.v2.json",
   "title": "Payload-Vertrag v1 (Spec §5)",
-  "description": "Ausgabe der extract-Stufe. Wird nie im Client erzeugt. Alle Felder außer den Pflichtfeldern dürfen null sein — das Modell erfindet nichts, wenn etwas nicht auf der Seite steht.",
+  "description": "Ausgabe der extract-Stufe. Wird nie im Client erzeugt. Alle Felder außer den Pflichtfeldern dürfen null sein — das Modell erfindet nichts, wenn etwas nicht auf der Seite steht. v2: takeover_payment_eur und takeover_note ergänzt (Abstandszahlung/Ablöse), weil §13 für T_NACHMIETER die Übernahme als variablen Teil verlangt und v1 dafür kein Feld hatte.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -25,6 +25,8 @@
         "cold_rent",
         "warm_rent",
         "deposit",
+        "takeover_payment_eur",
+        "takeover_note",
         "available_from",
         "wbs_required",
         "features",
@@ -107,6 +109,20 @@
             "null"
           ],
           "description": "Kaution in Euro als Zahl. Ist sie als Vielfaches der Kaltmiete angegeben (\"3 Nettokaltmieten\") und die Kaltmiete steht da, rechne aus. Sonst null."
+        },
+        "takeover_payment_eur": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Abstandszahlung, Ablöse oder Abschlag für Einbauten in Euro als Zahl — Geld, das an den bisherigen Mieter oder Anbieter geht, nicht an den Vermieter. Typisch bei Nachmietergesuchen für Einbauküche, Einbauschränke, Bodenbeläge. Steht oft im Beschreibungstext, nicht in der Datentabelle: \"Eine Abstandszahlung in Höhe von 7350€ ist abzustimmen\". Nicht mit der Kaution verwechseln. Null, wenn keine genannt."
+        },
+        "takeover_note": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Wörtliches Zitat, höchstens 200 Zeichen, das sagt WAS übernommen werden kann oder soll — \"Die hochwertige Einbauküche kann ebenfalls übernommen werden\". Auch ohne Betrag ausfüllen, wenn eine Übernahme angeboten wird. Null, wenn nichts dergleichen dasteht."
         },
         "available_from": {
           "type": [
@@ -192,7 +208,7 @@
             "boolean",
             "null"
           ],
-          "description": "true nur, wenn das Portal den Anbieter selbst als privat kennzeichnet (\"Privatanbieter\", \"Privat\", \"Von privat\"). Nicht selbst schlussfolgern, weil der Name nach einer Person klingt. Keine Kennzeichnung: null."
+          "description": "Nur was das PORTAL ausdrücklich als Etikett anzeigt. true bei \"Privatanbieter\", \"Privat\", \"Von privat\", \"Privatperson\". false bei \"Gewerblich\" oder \"Gewerblicher Anbieter\". null in ALLEN anderen Fällen — auch wenn der Anbieter offensichtlich eine Firma ist. Ein \"GmbH\" im Namen ist kein Portal-Etikett, und die eigene Website einer Verwaltung hat überhaupt keins. Schließe nichts aus dem Namen: das ist Aufgabe einer späteren Stufe."
         },
         "self_description": {
           "type": [

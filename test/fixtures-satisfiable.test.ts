@@ -20,7 +20,8 @@ const NOTHING: Payload = {
   listing: {
     external_id: null, url: null, street: null, house_number: null, postcode: null,
     district: null, rooms: null, living_space: null, cold_rent: null, warm_rent: null,
-    deposit: null, available_from: null, wbs_required: null, features: [],
+    deposit: null, takeover_payment_eur: null, takeover_note: null,
+    available_from: null, wbs_required: null, features: [],
     description_excerpt: null,
   },
   provider: {
@@ -76,6 +77,8 @@ const HANDGELESEN: Record<string, Payload> = {
       living_space: 54,
       cold_rent: 650,
       deposit: 1300,
+      takeover_payment_eur: 800,
+      takeover_note: 'Die Einbauküche habe ich vor drei Jahren gekauft und würde sie gern für 800 Euro übernehmen lassen',
       features: ['Altbau', 'Einbauküche', 'Dielenboden', '2. Etage', 'Haustiere nach Absprache'],
       description_excerpt:
         'Hallo zusammen, ich ziehe Ende des Monats aus beruflichen Gründen nach Leipzig und suche daher einen Nachmieter für meine Wohnung.',
@@ -126,6 +129,10 @@ const HANDGELESEN: Record<string, Payload> = {
       cold_rent: 685,
       warm_rent: 950,
       deposit: 2055,
+      // 7.350 € Abstand fuer die Einbaukueche — nicht die Kaution, und nicht
+      // eine Umzugskostenschaetzung des Portals.
+      takeover_payment_eur: 7350,
+      takeover_note: 'Die hochwertige Einbauküche kann ebenfalls übernommen werden',
       features: ['Altbau', '2. OG', 'Balkon', 'Einbauküche', 'Keller', 'WG-geeignet'],
       description_excerpt:
         'Diese 2-Zimmer-Altbauwohnung hat eine Wohnfläche von 81 Quadratmetern inklusive Balkon.',

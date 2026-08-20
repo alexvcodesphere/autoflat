@@ -56,6 +56,13 @@ das Gegenteil. Lies den ganzen Satz, nicht nur das Stichwort.
 - `deposit`: Steht "3 Nettokaltmieten" **und** die Kaltmiete ist bekannt,
   rechne aus. Das ist Rechnen mit genannten Zahlen, kein Raten. Fehlt eines
   von beidem: null.
+- `takeover_payment_eur`: Geld, das an den **bisherigen Mieter** geht, nicht
+  an den Vermieter — Abstandszahlung, Ablöse, Abschlag für Einbauten. Steht
+  meist mitten im Beschreibungstext, nicht in der Datentabelle: „Eine
+  Abstandszahlung in Höhe von 7350€ ist abzustimmen." Nicht mit der Kaution
+  verwechseln, und nicht mit den Umzugskosten, die manche Portale daneben
+  ausweisen. Bei einem Nachmietergesuch ist das oft die wichtigste Zahl im
+  ganzen Inserat.
 - `available_from` nur bei einem echten Datum, als `YYYY-MM-DD`.
   "sofort", "ab sofort", "nach Vereinbarung" → null.
 
@@ -64,11 +71,20 @@ das Gegenteil. Lies den ganzen Satz, nicht nur das Stichwort.
 Diese beiden tragen die Einordnung als Makler, Verwaltung oder Privatperson.
 Lies dafür sorgfältig:
 
-- **`provider.platform_private_flag`**: `true` nur, wenn das **Portal** den
-  Anbieter als privat kennzeichnet ("Privatanbieter", "Privat", "Von privat",
-  "Privatperson"). Schließe das nicht selbst daraus, dass der Name nach einer
-  Person klingt — "Hausverwaltung Schmidt" ist eine Firma. Fehlt die
-  Kennzeichnung: null.
+- **`provider.platform_private_flag`**: Nur das **Etikett**, das das Portal
+  anzeigt — nichts, was du selbst erschließt.
+
+  | Wert | Wann |
+  |---|---|
+  | `true` | „Privatanbieter", „Privat", „Von privat", „Privatperson" |
+  | `false` | „Gewerblich", „Gewerblicher Anbieter" |
+  | `null` | **alles andere** |
+
+  `null` ist der häufigste Fall. Ein „GmbH" im Anbieternamen ist kein Etikett.
+  Ein angezeigtes Impressum ist keins. Die eigene Website einer Verwaltung hat
+  gar keins. Ob der Anbieter eine Firma ist, entscheidet eine spätere Stufe
+  aus dem Volltext — hier wird nur abgelesen.
+
 - **`provider.self_description`**: das wörtliche Zitat, aus dem hervorgeht,
   **in welcher Rolle** der Anbieter handelt.
 

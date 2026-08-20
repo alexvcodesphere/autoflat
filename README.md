@@ -303,6 +303,82 @@ auf. Besser, sie steht beantwortet in der Mail, als dass sie unbeantwortet im
 Kopf bleibt. Der Satz steht als `hinweis_adresse` im Profil und ist frei
 formulierbar; fehlt er, entfällt die Zeile ersatzlos.
 
+## payload.json ist bei v2 — und warum
+
+§5 sagt: „Versioniere das Schema ab Tag eins. Es ändert sich in Woche zwei."
+Genau so kam es, und der Anlass ist lehrreich.
+
+Beim Gate-Lauf über die echten Fixtures zitierte das Modell in seiner
+Begründung: *„bietet Einbauten gegen einen Abstand von 7.350 € an"*. In meiner
+Fixture-Erwartung stand `must_not_appear_anywhere: ["7350"]` — ich hatte die
+Zahl für eine Umzugskosten-Schätzung des Portals gehalten. Der Blick in den
+Seitentext gab dem Gate recht:
+
+> „Die hochwertige Einbauküche kann ebenfalls übernommen werden. Eine
+> **Abstandszahlung in Höhe von 7350€** ist daher abzustimmen."
+
+7.350 € auf eine Wohnung mit 685 € Kaltmiete — die wichtigste Zahl im ganzen
+Inserat. Und der Payload hatte kein Feld dafür. §13 verlangt für
+`T_NACHMIETER` ausdrücklich die „Übernahme" als variablen Teil des
+Anschreibens; ohne Feld wäre das Anschreiben darüber stumm geblieben.
+
+Neu in v2: `listing.takeover_payment_eur` und `listing.takeover_note`. Beides
+mit dem ausdrücklichen Hinweis im Prompt, dieses Geld nicht mit der Kaution zu
+verwechseln — es geht an den bisherigen Mieter, nicht an den Vermieter.
+
+Zwei Lehren, beide im Code vermerkt: Eine Zahl, die ich nicht erklären kann,
+ist keine Zahl, die ich verbieten sollte. Und die Fixture-Erwartungen sind
+selbst Code — sie können falsch sein, und hier war eine falsch.
+
+Der Lauf mit v2 fand dann noch eine zweite Übernahme, die ich selbst in ein
+Fixture geschrieben und nie modelliert hatte: 800 € für die Einbauküche im
+Kleinanzeigen-Inserat. Ein neues Feld deckt rückwirkend auf, was vorher
+niemandem auffiel.
+
+### Zusicherungen nur auf das, was Verhalten ändert
+
+Nach drei Runden Fehlschlägen, die alle keine echten Fehler waren, ist der
+Maßstab geschärft. Das System hat einen Menschen in der Schleife — jeder Draft
+wird gelesen, bevor er geht (§9). Eine Zusicherung ist deshalb nur dann
+gerechtfertigt, wenn ihr Bruch **etwas anderes passieren lässt**:
+
+| geprüft | warum |
+|---|---|
+| `risk: high` | sperrt den Versand (§9) |
+| Zweig | bestimmt das Template, und die Templates sind gegensätzlich (§13) |
+| `must_not_send` | die eine Zusicherung, die Schaden verhindert |
+| ein entscheidendes Betrugssignal | Stichprobe, dass die Begründung stimmt |
+| `platform_private_flag: true` | speist ein hartes Signal (§7 Stufe 1) |
+
+Nicht mehr geprüft:
+
+- **die vollständige Signalliste.** Findet das Gate vier statt einem, ändert
+  das nichts — gesendet wird ohnehin nicht.
+- **`platform_private_flag: false` gegen `null`.** Für den Ablauf gleichwertig;
+  nur `true` löst etwas aus.
+- **einzelne `features`.** Welche das Modell aus einer langen
+  Ausstattungsliste auswählt, ist ein Auswahlurteil. §13 setzt genau **ein**
+  Merkmal ein, und das kommt aus einer eigenen Prioritätsliste im Renderer.
+
+Nebenbei beobachtet: Der Prompt wuchs um zwei Regeln, und daraufhin fiel bei
+einem Fixture ein Merkmal aus der Liste, das vorher drin war. Längere Prompts
+verschieben die Aufmerksamkeit. Ein Grund mehr, nur das zuzusichern, was
+zählt — sonst rauscht die Suite bei jeder Prompt-Änderung.
+
+### Die Fixtures prüfen die Spec, nicht nur das Modell
+
+Dreimal hintereinander war ein Fehlschlag **meine** Unterbestimmung, nicht ein
+Modellfehler:
+
+| Fehlschlag | Ursache | Regel danach |
+|---|---|---|
+| falsche Objektnummer | zwei IDs auf der Seite, keine Regel welche | Portal-ID vor Anbieter-ID |
+| `Balkon` in `features` | „Einen Balkon gibt es nicht" | verneinte Merkmale gehören nicht hinein |
+| `platform_private_flag: null` | nur `true` und `null` definiert, „Gewerblich" nicht | drei Zustände, `false` bei gewerblicher Kennzeichnung |
+
+`false` ist dort keine Verlegenheitslösung: Es schließt die Privatperson aus,
+und das ist ein anderer Wissensstand als „unbekannt".
+
 ## Phase 5 — Entscheidungen
 
 **Kein Regex-Klassifikator.** §7 verbietet ihn ausdrücklich, und die

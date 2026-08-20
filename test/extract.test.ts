@@ -16,7 +16,8 @@ const EMPTY: Payload = {
   listing: {
     external_id: null, url: null, street: null, house_number: null, postcode: null,
     district: null, rooms: null, living_space: null, cold_rent: null, warm_rent: null,
-    deposit: null, available_from: null, wbs_required: null, features: [],
+    deposit: null, takeover_payment_eur: null, takeover_note: null,
+    available_from: null, wbs_required: null, features: [],
     description_excerpt: null,
   },
   provider: {

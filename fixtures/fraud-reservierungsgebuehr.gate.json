@@ -1,5 +1,5 @@
 {
-  "note": "Der schwierige Fall: sieht durchweg seriös aus, marktgerechter Preis, echte Firmenfassade, Ansprechpartner mit Titel. Das Betrugsmerkmal ist ein einzelner Absatz — 350 EUR Reservierungsgebühr vor dem Besichtigungstermin. In Deutschland unzulässig und ein klassischer Vorkasse-Betrug.",
+  "note": "Der schwierige Fall: sieht durchweg seriös aus, marktgerechter Preis, echte Firmenfassade, Ansprechpartner mit Titel. Das Betrugsmerkmal ist ein einzelner Absatz — 350 EUR Reservierungsgebühr vor dem Besichtigungstermin. In Deutschland unzulässig und ein klassischer Vorkasse-Betrug. Zugesichert wird nur das entscheidende Signal und dass nicht gesendet wird — welche weiteren das Modell noch findet, ist Zugabe und aendert nichts.",
   "risk": "high",
   "signals_must_include": [
     "prepayment_before_viewing"

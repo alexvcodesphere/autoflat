@@ -11,8 +11,15 @@ import { loadSchema } from '../llm/validate.ts';
 import { logLlmCall } from '../llm/log.ts';
 import { externalIdFromUrl, type CaptureInput } from '../lib/capture.ts';
 
-/** Schemaversion des Payloads. Er ändert sich in Woche zwei (§5). */
-export const PAYLOAD_VERSION = 1;
+/**
+ * Schemaversion des Payloads. §5: "Es ändert sich in Woche zwei."
+ *
+ * v2: takeover_payment_eur und takeover_note. Aufgefallen, weil das Gate in
+ * einem echten Inserat eine Abstandszahlung von 7.350 € zitierte, für die es
+ * in v1 kein Feld gab — auf eine Wohnung mit 685 € Kaltmiete. §13 verlangt
+ * für T_NACHMIETER die "Übernahme" als variablen Teil des Anschreibens.
+ */
+export const PAYLOAD_VERSION = 2;
 
 export interface Listing {
   external_id: string | null;
@@ -26,6 +33,9 @@ export interface Listing {
   cold_rent: number | null;
   warm_rent: number | null;
   deposit: number | null;
+  /** Abstandszahlung/Ablöse an den bisherigen Mieter, nicht an den Vermieter. */
+  takeover_payment_eur: number | null;
+  takeover_note: string | null;
   available_from: string | null;
   wbs_required: boolean | null;
   features: string[];

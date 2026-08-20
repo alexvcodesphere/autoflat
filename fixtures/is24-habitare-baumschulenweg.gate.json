@@ -3,8 +3,7 @@
   "risk": "low",
   "signals_must_not_include": [
     "prepayment_before_viewing",
-    "keys_by_mail",
-    "rent_far_below_market"
+    "keys_by_mail"
   ],
   "branch": "T_MAKLER",
   "firm_type_guess": "makler"

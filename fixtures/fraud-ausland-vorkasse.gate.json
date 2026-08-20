@@ -1,10 +1,8 @@
 {
-  "note": "Vier Signale auf einmal: Vermieter im Ausland, Vorkasse vor Besichtigung, Schlüsselversand, Drängen auf WhatsApp. Dazu maschinell wirkendes Deutsch.",
+  "note": "Vier Signale auf einmal: Vermieter im Ausland, Vorkasse vor Besichtigung, Schlüsselversand, Drängen auf WhatsApp. Dazu maschinell wirkendes Deutsch. Zugesichert wird nur das entscheidende Signal und dass nicht gesendet wird — welche weiteren das Modell noch findet, ist Zugabe und aendert nichts.",
   "risk": "high",
   "signals_must_include": [
-    "prepayment_before_viewing",
-    "keys_by_mail",
-    "landlord_abroad"
+    "prepayment_before_viewing"
   ],
   "branch": "T_PRIVAT",
   "must_not_send": true

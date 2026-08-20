@@ -1,5 +1,5 @@
 {
-  "note": "Echtes IS24-Inserat, Pankow, Nachmietergesuch von privat. Keine Strasse auf der Seite (nur Ortsteil + PLZ). Falle: '7350€' ist eine Umzugskosten-Schaetzung von IS24, kein Wert des Inserats.",
+  "note": "Echtes IS24-Inserat, Pankow, Nachmietergesuch von privat. Keine Strasse auf der Seite (nur Ortsteil + PLZ). Und eine Falle, in die ich selbst getappt bin: die 7350 EUR sind KEINE Umzugskostenschaetzung des Portals, sondern eine echte Abstandszahlung fuer die Einbaukueche. Das Gate hat sie zitiert, meine Extraktion hatte kein Feld dafuer — daher payload v2.",
   "must_equal": {
     "listing.external_id": "169730902",
     "listing.street": null,
@@ -12,7 +12,8 @@
     "listing.deposit": 2055,
     "listing.available_from": null,
     "listing.wbs_required": null,
-    "provider.platform_private_flag": true
+    "provider.platform_private_flag": true,
+    "listing.takeover_payment_eur": 7350
   },
   "must_be_null": [
     "provider.email_raw",
@@ -23,10 +24,12 @@
     "listing.district",
     "listing.description_excerpt",
     "provider.name_raw",
-    "provider.self_description"
+    "provider.self_description",
+    "listing.takeover_note"
   ],
   "must_contain": {
-    "provider.name_raw": "Ebenau"
+    "provider.name_raw": "Ebenau",
+    "listing.takeover_note": "bernommen"
   },
   "features_include_any_of": [
     [
@@ -43,8 +46,5 @@
       "WG-geeignet",
       "WG geeignet"
     ]
-  ],
-  "must_not_appear_anywhere": [
-    "7350"
   ]
 }

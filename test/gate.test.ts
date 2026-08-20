@@ -20,7 +20,8 @@ function listing(over: Partial<Listing> = {}): Listing {
   return {
     external_id: '1', url: null, street: null, house_number: null, postcode: null,
     district: null, rooms: 2, living_space: null, cold_rent: null, warm_rent: null,
-    deposit: null, available_from: null, wbs_required: null, features: [],
+    deposit: null, takeover_payment_eur: null, takeover_note: null,
+    available_from: null, wbs_required: null, features: [],
     description_excerpt: null, ...over,
   };
 }

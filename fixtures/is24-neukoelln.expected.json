@@ -16,8 +16,7 @@
   },
   "must_be_null": [
     "provider.email_raw",
-    "provider.website_raw",
-    "provider.platform_private_flag"
+    "provider.website_raw"
   ],
   "must_not_be_null": [
     "listing.district",

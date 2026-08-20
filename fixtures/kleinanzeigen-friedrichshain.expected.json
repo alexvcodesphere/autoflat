@@ -1,5 +1,5 @@
 {
-  "note": "Privatanbieter, Nachmieter. Prueft: nur Kiez -> keine erfundene Strasse, 'ab sofort' -> null, fehlende WBS-Aussage -> null, Portal-Kennzeichnung 'Privat'.",
+  "note": "Privatanbieter, Nachmieter. Prueft: nur Kiez -> keine erfundene Strasse, 'ab sofort' -> null, fehlende WBS-Aussage -> null, Portal-Kennzeichnung 'Privat'. Enthaelt ausserdem eine Kuechenuebernahme fuer 800 EUR — beim Schreiben des Fixtures nicht bedacht, erst mit payload v2 sichtbar geworden.",
   "must_equal": {
     "listing.external_id": "2947183055",
     "listing.postcode": "10245",
@@ -9,7 +9,8 @@
     "listing.deposit": 1300,
     "listing.available_from": null,
     "listing.wbs_required": null,
-    "provider.platform_private_flag": true
+    "provider.platform_private_flag": true,
+    "listing.takeover_payment_eur": 800
   },
   "must_be_null": [
     "listing.street",
@@ -23,7 +24,8 @@
     "listing.district",
     "listing.description_excerpt",
     "provider.name_raw",
-    "provider.self_description"
+    "provider.self_description",
+    "listing.takeover_note"
   ],
   "must_not_appear_anywhere": [
     "720",

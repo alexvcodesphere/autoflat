@@ -14,8 +14,7 @@
     "provider.email_raw": "vermietung@kranz-immobilien.de"
   },
   "must_be_null": [
-    "listing.house_number",
-    "provider.platform_private_flag"
+    "listing.house_number"
   ],
   "must_not_be_null": [
     "listing.district",

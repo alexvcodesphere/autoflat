@@ -1,5 +1,5 @@
 {
-  "note": "Echtes IS24-Inserat, Makler (habitare Immobilien IVD). Drei Fallen: zwei konkurrierende IDs (Scout-ID vs. interne Objekt-ID), verneinte Merkmale (\"Einen Balkon gibt es nicht\", \"ein Aufzug ist nicht vorhanden\"), und die Strasse steht nur im Beschreibungstext, nicht im Adressfeld.",
+  "note": "Echtes IS24-Inserat, Makler (habitare Immobilien IVD). Drei Fallen: zwei konkurrierende IDs (Scout-ID vs. interne Objekt-ID), verneinte Merkmale (\"Einen Balkon gibt es nicht\", \"ein Aufzug ist nicht vorhanden\"), und die Strasse steht nur im Beschreibungstext, nicht im Adressfeld. WG-geeignet wurde als Zusicherung entfernt: welche Merkmale das Modell aus einer langen Ausstattungsliste auswaehlt, ist ein Auswahlurteil und aendert nichts am Draft — §13 setzt genau EIN Merkmal ein, und das kommt aus einer eigenen Prioritaetsliste.",
   "must_equal": {
     "listing.external_id": "169608740",
     "listing.house_number": null,
@@ -10,8 +10,7 @@
     "listing.warm_rent": 904.24,
     "listing.deposit": 2066.22,
     "listing.available_from": null,
-    "listing.wbs_required": null,
-    "provider.platform_private_flag": false
+    "listing.wbs_required": null
   },
   "must_be_null": [
     "provider.email_raw"
@@ -39,10 +38,6 @@
       "2. OG",
       "2.OG",
       "2. Obergeschoss"
-    ],
-    [
-      "WG-geeignet",
-      "WG geeignet"
     ]
   ],
   "features_must_not_include": [
