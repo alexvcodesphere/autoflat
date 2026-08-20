@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "payload.v1.json",
+  "title": "Payload-Vertrag v1 (Spec §5)",
+  "description": "Ausgabe der extract-Stufe. Wird nie im Client erzeugt. Alle Felder außer den Pflichtfeldern dürfen null sein — das Modell erfindet nichts, wenn etwas nicht auf der Seite steht.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "listing",
+    "provider"
+  ],
+  "properties": {
+    "listing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "external_id",
+        "url",
+        "street",
+        "house_number",
+        "postcode",
+        "district",
+        "rooms",
+        "living_space",
+        "cold_rent",
+        "warm_rent",
+        "deposit",
+        "available_from",
+        "wbs_required",
+        "features",
+        "description_excerpt"
+      ],
+      "properties": {
+        "external_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Objekt-, Inserats- oder Scout-ID, exakt wie auf der Seite. Keine erfundene Nummer, keine aus der URL geratene. Steht keine da: null."
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Immer null zurückgeben. Der Dienst setzt die maßgebliche URL selbst ein."
+        },
+        "street": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Nur der Straßenname ohne Hausnummer. Viele Inserate nennen nur den Kiez — dann null."
+        },
+        "house_number": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Hausnummer als Text, z. B. \"104\" oder \"12a\". Null, wenn nicht genannt."
+        },
+        "postcode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Fünfstellige PLZ als Text, führende Null erhalten. Null, wenn nicht genannt."
+        },
+        "district": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Berliner Ortsteil, z. B. \"Neukölln\", \"Prenzlauer Berg\". Nicht der Bezirk, wenn der Ortsteil dasteht."
+        },
+        "rooms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Zimmerzahl als Zahl, halbe Zimmer als Dezimalzahl (2,5 -> 2.5)."
+        },
+        "living_space": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Wohnfläche in Quadratmetern als Zahl (58,4 m² -> 58.4)."
+        },
+        "cold_rent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Kaltmiete/Nettokaltmiete in Euro als Zahl, ohne Währungszeichen und Tausenderpunkt."
+        },
+        "warm_rent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Warmmiete/Gesamtmiete in Euro als Zahl. Nicht aus Kaltmiete plus Nebenkosten selbst zusammenrechnen, wenn keine Warmmiete ausgewiesen ist."
+        },
+        "deposit": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Kaution in Euro als Zahl. Ist sie als Vielfaches der Kaltmiete angegeben (\"3 Nettokaltmieten\") und die Kaltmiete steht da, rechne aus. Sonst null."
+        },
+        "available_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Bezugsdatum als YYYY-MM-DD. Nennt das Inserat nur Tag und Monat (\"ab 01.09.\"), nimm das nächste Vorkommen ab dem im Input genannten heutigen Datum. \"sofort\", \"ab sofort\", \"nach Vereinbarung\" -> null. Kein Datum genannt -> null."
+        },
+        "wbs_required": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "true nur, wenn ein WBS ausdrücklich verlangt wird. false nur, wenn ausdrücklich steht, dass keiner nötig ist. Schweigt die Seite: null."
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Kurze Ausstattungs- und Objektmerkmale, je 1-3 Wörter, in der Sprache des Inserats. Aufnehmen: Bauform (Altbau, Neubau), Etage (\"3. OG\", \"EG\"), Balkon/Terrasse/Garten, Einbauküche, Bad-Merkmale (Wanne, Dusche, Fenster), Aufzug, Keller, Stellplatz, Bodenbelag, Heizungsart, Zustand (saniert, renoviert), WG-geeignet, Haustiere erlaubt, Denkmalschutz. Nicht aufnehmen: Werbefloskeln (\"traumhaft\", \"Wohlfühloase\"), Lagebeschreibungen, Preise, Fristen. Leeres Array, wenn nichts davon dasteht."
+        },
+        "description_excerpt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Wörtliches Zitat aus dem Beschreibungstext des Inserats, höchstens 400 Zeichen, ohne Navigation, Cookie-Hinweise oder Fußzeile. Nicht umformulieren, nicht zusammenfassen. Gibt es keinen Beschreibungstext: null."
+        }
+      }
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name_raw",
+        "contact_person_raw",
+        "phone_raw",
+        "email_raw",
+        "website_raw",
+        "platform_private_flag",
+        "self_description"
+      ],
+      "properties": {
+        "name_raw": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Name des Anbieters, exakt wie auf der Seite, inklusive Rechtsform. Bei Privatanbietern der genannte Personenname. Nicht der Portalname (nicht \"ImmoScout24\", nicht \"Kleinanzeigen\"). Steht kein Anbieter da: null."
+        },
+        "contact_person_raw": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Genannte Ansprechperson, exakt wie auf der Seite, mit Anrede und Titel falls vorhanden."
+        },
+        "phone_raw": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Telefonnummer, exakt wie auf der Seite. Auch teilweise verdeckte Nummern (\"030 12345...\") übernehmen."
+        },
+        "email_raw": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "E-Mail-Adresse, nur wenn sie wörtlich auf der Seite steht. Niemals aus dem Firmennamen oder einer Domain konstruieren."
+        },
+        "website_raw": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Website des Anbieters, nur wenn sie wörtlich dasteht. Nicht die Portal-URL."
+        },
+        "platform_private_flag": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "true nur, wenn das Portal den Anbieter selbst als privat kennzeichnet (\"Privatanbieter\", \"Privat\", \"Von privat\"). Nicht selbst schlussfolgern, weil der Name nach einer Person klingt. Keine Kennzeichnung: null."
+        },
+        "self_description": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Wörtliches Zitat aus dem Seitentext, aus dem die Rolle des Anbieters hervorgeht. Steht meist im Titel oder in der Objektbeschreibung, fast nie im Anbieterblock — lies den ganzen Text. Beispiele: \"Nachmieter für meine Wohnung gesucht\", \"ich ziehe aus beruflichen Gründen nach Leipzig\", \"wir verwalten dieses Objekt seit 2011\", \"unser Kunde sucht einen Nachmieter\", \"als inhabergeführter Makler\". Bei privaten Anbietern und Nachmietergesuchen ist so ein Satz fast immer vorhanden. Höchstens 300 Zeichen, wörtlich. Das ist der wichtigste Satz für die spätere Einordnung als Makler, Verwaltung oder Privatperson. null nur, wenn im gesamten Text kein solcher Satz steht."
+        }
+      }
+    }
+  }
+}

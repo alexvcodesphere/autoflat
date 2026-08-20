@@ -11,7 +11,8 @@
     "db:reset": "node scripts/db-init.ts --force",
     "llm:smoke": "node scripts/smoke-llm.ts",
     "test": "node --test \"test/**/*.test.ts\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "extract:fixtures": "node scripts/extract-fixtures.ts"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",

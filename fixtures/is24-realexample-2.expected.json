@@ -1,0 +1,45 @@
+{
+  "note": "Echtes IS24-Inserat, Baumschulenweg, Nachmietergesuch von privat. Prueft die Jahresergaenzung: die Beschreibung nennt nur 'ab 01.09.'. Monat+Tag werden gepinnt, nicht das Jahr — sonst veraltet die Zusicherung mit dem Kalender.",
+  "must_equal": {
+    "listing.external_id": "170104954",
+    "listing.street": "Behringstraße",
+    "listing.house_number": "33",
+    "listing.postcode": "12437",
+    "listing.rooms": 2,
+    "listing.living_space": 63,
+    "listing.cold_rent": 865,
+    "listing.warm_rent": 1130,
+    "listing.deposit": 2595,
+    "listing.wbs_required": null,
+    "provider.platform_private_flag": true
+  },
+  "must_be_null": [
+    "provider.email_raw",
+    "provider.phone_raw",
+    "provider.website_raw"
+  ],
+  "must_not_be_null": [
+    "listing.district",
+    "listing.description_excerpt",
+    "provider.name_raw",
+    "provider.self_description",
+    "listing.available_from"
+  ],
+  "must_contain": {
+    "provider.name_raw": "Scheremetjew",
+    "provider.self_description": "Nachmieter",
+    "listing.available_from": "-09-01"
+  },
+  "features_include_any_of": [
+    [
+      "Keller"
+    ],
+    [
+      "Dusche",
+      "Bad"
+    ]
+  ],
+  "must_not_appear_anywhere": [
+    "265"
+  ]
+}

@@ -24,6 +24,39 @@ interface GeminiUsageMetadata {
   candidatesTokenCount?: number;
   thoughtsTokenCount?: number;
   cachedContentTokenCount?: number;
+  toolUsePromptTokenCount?: number;
+  totalTokenCount?: number;
+}
+
+/**
+ * Selbstkontrolle der Abrechnungsannahme.
+ *
+ * Wir rechnen `candidatesTokenCount + thoughtsTokenCount` zum Output-Satz ab.
+ * Das stimmt nur, wenn Gemini beide getrennt meldet. Wären thoughts bereits
+ * in candidates enthalten, zahlten wir sie doppelt und das Tagesbudget (§16)
+ * stünde auf falschen Zahlen. Statt das zu glauben, prüfen wir es gegen
+ * Geminis eigene Gesamtsumme — einmal pro Prozess, damit es kein Log-Rauschen
+ * gibt.
+ */
+let usageMismatchReported = false;
+
+function checkUsageConsistency(meta: GeminiUsageMetadata | undefined, model: string): void {
+  if (usageMismatchReported || !meta?.totalTokenCount) return;
+  const parts =
+    (meta.promptTokenCount ?? 0) +
+    (meta.candidatesTokenCount ?? 0) +
+    (meta.thoughtsTokenCount ?? 0) +
+    (meta.toolUsePromptTokenCount ?? 0);
+  if (parts === meta.totalTokenCount) return;
+  usageMismatchReported = true;
+  console.warn(
+    `[gemini-generate:${model}] Token-Summen gehen nicht auf: ` +
+      `prompt ${meta.promptTokenCount ?? 0} + candidates ${meta.candidatesTokenCount ?? 0} + ` +
+      `thoughts ${meta.thoughtsTokenCount ?? 0} + toolUse ${meta.toolUsePromptTokenCount ?? 0} ` +
+      `= ${parts}, gemeldet ${meta.totalTokenCount}. ` +
+      `Die Kostenrechnung in src/llm/pricing.ts unterstellt, dass thinking-Tokens ` +
+      `NICHT in candidates enthalten sind — das ist zu prüfen.`,
+  );
 }
 
 function mapUsage(meta: GeminiUsageMetadata | undefined): LlmUsage {
@@ -40,7 +73,14 @@ export function classifyError(err: unknown): LlmError {
   if (err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError')) {
     return { kind: 'timeout', message: err.message };
   }
-  const message = err instanceof Error ? err.message : String(err);
+  // `fetch failed` allein ist beim Debuggen wertlos — der eigentliche Grund
+  // (ENOTFOUND, ECONNREFUSED, Zertifikatsfehler) steckt in `cause`.
+  const cause = (err as { cause?: { message?: string; code?: string } } | null)?.cause;
+  const baseMessage = err instanceof Error ? err.message : String(err);
+  const message =
+    cause?.message && cause.message !== baseMessage
+      ? `${baseMessage}: ${cause.message}${cause.code ? ` (${cause.code})` : ''}`
+      : baseMessage;
   const status = (err as { status?: number } | null)?.status;
   const haystack = `${status ?? ''} ${message}`.toLowerCase();
 
@@ -113,6 +153,7 @@ export function createGeminiGenerateAdapter(opts: GeminiGenerateOptions): Genera
           },
         });
 
+        checkUsageConsistency(response.usageMetadata, model);
         const usage = mapUsage(response.usageMetadata);
         const raw = response.text ?? '';
         const candidate = response.candidates?.[0];

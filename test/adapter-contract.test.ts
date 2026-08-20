@@ -123,3 +123,16 @@ test('classifyError bildet Anbieterfehler auf die sechs Arten ab', () => {
   assert.equal(classifyError(new Error('irgendwas')).kind, 'unknown');
   assert.equal(classifyError('string statt Error').kind, 'unknown');
 });
+
+test('classifyError packt die eigentliche Netzursache aus', () => {
+  // Undicis "fetch failed" allein sagt nichts; der Grund steht in cause.
+  const netErr = Object.assign(new TypeError('fetch failed'), {
+    cause: Object.assign(new Error('getaddrinfo ENOTFOUND generativelanguage.googleapis.com'), {
+      code: 'ENOTFOUND',
+    }),
+  });
+  const classified = classifyError(netErr);
+  assert.equal(classified.kind, 'unknown');
+  assert.match(classified.message, /ENOTFOUND/);
+  assert.match(classified.message, /fetch failed/);
+});

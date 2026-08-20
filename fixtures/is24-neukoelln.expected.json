@@ -1,0 +1,53 @@
+{
+  "note": "Vollstaendiges Inserat. Prueft: Kaution als Vielfaches ausrechnen, Aehnliche-Objekte-Falle, keine erfundene E-Mail.",
+  "must_equal": {
+    "listing.external_id": "162345678",
+    "listing.street": "Sonnenallee",
+    "listing.house_number": "104",
+    "listing.postcode": "12045",
+    "listing.rooms": 2,
+    "listing.living_space": 58.4,
+    "listing.cold_rent": 890,
+    "listing.warm_rent": 1120,
+    "listing.deposit": 2670,
+    "listing.available_from": "2026-10-01",
+    "listing.wbs_required": false,
+    "provider.name_raw": "Meyer & Co. Hausverwaltung GmbH"
+  },
+  "must_be_null": [
+    "provider.email_raw",
+    "provider.website_raw",
+    "provider.platform_private_flag"
+  ],
+  "must_not_be_null": [
+    "listing.district",
+    "listing.description_excerpt",
+    "provider.contact_person_raw",
+    "provider.phone_raw",
+    "provider.self_description"
+  ],
+  "features_include_any_of": [
+    [
+      "Balkon"
+    ],
+    [
+      "Einbauküche",
+      "EBK"
+    ],
+    [
+      "Altbau"
+    ],
+    [
+      "3. OG",
+      "3.OG",
+      "3. Obergeschoss"
+    ]
+  ],
+  "must_not_appear_anywhere": [
+    "1450",
+    "1.450",
+    "199888777",
+    "155444333",
+    "620"
+  ]
+}

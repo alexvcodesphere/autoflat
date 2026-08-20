@@ -1,0 +1,50 @@
+{
+  "note": "Echtes IS24-Inserat, Pankow, Nachmietergesuch von privat. Keine Strasse auf der Seite (nur Ortsteil + PLZ). Falle: '7350€' ist eine Umzugskosten-Schaetzung von IS24, kein Wert des Inserats.",
+  "must_equal": {
+    "listing.external_id": "169730902",
+    "listing.street": null,
+    "listing.house_number": null,
+    "listing.postcode": "13189",
+    "listing.rooms": 2,
+    "listing.living_space": 81,
+    "listing.cold_rent": 685,
+    "listing.warm_rent": 950,
+    "listing.deposit": 2055,
+    "listing.available_from": null,
+    "listing.wbs_required": null,
+    "provider.platform_private_flag": true
+  },
+  "must_be_null": [
+    "provider.email_raw",
+    "provider.phone_raw",
+    "provider.website_raw"
+  ],
+  "must_not_be_null": [
+    "listing.district",
+    "listing.description_excerpt",
+    "provider.name_raw",
+    "provider.self_description"
+  ],
+  "must_contain": {
+    "provider.name_raw": "Ebenau"
+  },
+  "features_include_any_of": [
+    [
+      "Balkon"
+    ],
+    [
+      "Einbauküche",
+      "EBK"
+    ],
+    [
+      "Keller"
+    ],
+    [
+      "WG-geeignet",
+      "WG geeignet"
+    ]
+  ],
+  "must_not_appear_anywhere": [
+    "7350"
+  ]
+}

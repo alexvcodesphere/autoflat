@@ -5,7 +5,7 @@ Bewerbungsmail. Die maßgebliche Spec ist das Projektdokument; Verweise wie
 „§11" beziehen sich darauf. Leg sie als `docs/spec.md` ab, damit sie
 mitversioniert wird.
 
-**Stand: Phase 1 abgeschlossen.** Die Bauphasen stehen in der Spec, §14.
+**Stand: Phase 2 gebaut, Modelllauf steht aus.** Die Bauphasen stehen in der Spec, §14.
 
 ---
 
@@ -27,6 +27,10 @@ npm run llm:smoke           # echter Aufruf
 | `npm test` | Unit-Tests (`node --test`, kein Framework) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run llm:smoke` | ein Adapteraufruf gegen `schemas/smoke.json` |
+| `npm run extract:fixtures` | Extraktion über alle Fixtures, mit Zusicherungen |
+
+Erster echter Aufruf am 20.08.2026 gegen `gemini-3.5-flash-lite`: 1089 ms,
+203 In / 114 Out, $0,00034590, Schema sauber validiert.
 
 ## Voraussetzungen
 
@@ -44,6 +48,11 @@ Getestet auf Node 24.12.
 config/pricing.json    Preise. Bewusst außerhalb des Adaptercodes (§11).
 db/schema.sql          SQLite-Schema (§6), idempotent.
 schemas/               Kanonische JSON Schemas. Einzige Quelle der Wahrheit.
+prompts/extract.md     Systemprompt der extract-Stufe.
+fixtures/              Eingefrorene Inseratsseiten + Zusicherungen. Siehe docs/fixtures.md.
+src/stages/extract.ts  Stufe extract: page_text -> Payload (§5).
+src/lib/capture.ts     Was der Client schickt; URL-Ersatzschluessel.
+src/lib/fixtures.ts    Fixture-Harness.
 src/config/env.ts      .env-Zugriff an genau einer Stelle.
 src/db/                Verbindung + Schema.
 src/lib/normalize.ts   Namensnormalisierung (§6). Überall dieselbe Funktion.
@@ -150,6 +159,77 @@ mitzuschreiben. `data/llm-log/YYYY-MM-DD.jsonl` ist Wegwerfmaterial; die
 abrechnungsrelevanten Zahlen gehen nach `listing_event`. Abschaltbar über
 `LLM_LOG=0`.
 
+## Phase 2 — Entscheidungen
+
+**`url` setzt der Dienst, nicht das Modell.** Der Client kennt die URL sicher;
+das Modell müsste sie aus dem Seitentext raten. Das Schema verlangt sie
+trotzdem als Feld (Vertragstreue zu §5), der Prompt sagt „immer null", und
+`finalizePayload` trägt die echte ein.
+
+**Fehlende `external_id` ist kein Fehler.** §5 nennt sie als Pflichtfeld, §4
+sagt, dass manche Quellen keine haben. Auflösung: das Modell darf `null`
+liefern — eine erfundene Objektnummer wäre der schlimmere Ausgang — und
+`finalizePayload` bildet den Ersatzschlüssel aus der normalisierten URL
+(`url:kranz-immobilien.de/angebote/3-zimmer-wedding`). Tracking-Parameter und
+Slash am Ende fallen dabei weg, damit dieselbe Seite denselben Schlüssel
+ergibt.
+
+**Fehlender Anbietername stürzt nicht ab, sondern meldet sich.**
+`ExtractResult.issues` trägt `no_provider_name`; ohne Namen gibt es keinen
+Cache-Lookup und keinen Empfänger, das Inserat gehört nach T0 (§8 Flow B).
+
+**`additionalProperties: false` überall.** Das ist der maschinelle Teil von
+„keine erfundenen Felder": ein Feld, das nicht im Vertrag steht, lässt die
+Validierung scheitern, statt still durchzurutschen.
+
+**Erwartungen statt Soll-Payloads.** `fixtures/<name>.expected.json` hält nicht
+den kompletten erwarteten Payload fest — der wäre nach jeder Prompt-Änderung
+kaputt — sondern nur die Aussagen, die zählen. Die wichtigste Liste ist
+`must_be_null`: die Felder, die *nicht* auf der Seite stehen. Dazu
+`must_not_appear_anywhere` für Zahlen aus dem Abschnitt „Ähnliche Objekte",
+der auf jedem Portal danebensteht und die häufigste Verwechslungsquelle ist.
+
+**Die Erwartungsdateien werden selbst geprüft.**
+`test/fixtures-satisfiable.test.ts` enthält je Fixture den von Hand gelesenen
+Soll-Payload und stellt sicher, dass er die eigenen Zusicherungen erfüllt.
+Sonst sähe ein Tippfehler in der Erwartung wie ein Modellfehler aus.
+
+## Was der erste Lauf gegen echte Inserate gezeigt hat
+
+Fünf Fixtures, davon zwei echte IS24-Seiten (Nachmietergesuche von privat),
+`gemini-3.5-flash-lite`, ~$0,0017 und ~1,9 s pro Inserat. Echte Portalseiten
+sind mit ~3.700 Input-Tokens etwa doppelt so groß wie meine gebauten.
+
+Richtig erkannt wurden Objektnummern, Adressen, alle Preise, die Kaution, die
+Portal-Kennzeichnung „von privat" und der Verzicht auf eine erfundene Straße,
+wo die Seite nur den Ortsteil nennt.
+
+**Ein Feld fiel systematisch aus: `provider.self_description`** — in allen
+Privat- und Nachmieterfällen `null`. Ausgerechnet das Feld, das nach §7 die
+Einordnung Makler/Verwaltung/Privat trägt.
+
+Ursache war die Formulierung im Prompt: Ich hatte das Feld als Satz
+beschrieben, in dem „der Anbieter beschreibt, wer er ist" — mit Beispielen im
+Firmenton („wir verwalten dieses Objekt seit 2011"). Das Modell hat daraufhin
+nur den Anbieterblock durchsucht. Tatsächlich steht der Satz bei Privatleuten
+**im Titel oder im Beschreibungstext**: „Nachmieter für wunderschöne
+2-Zimmer-Altbauwohnung in Berlin-Pankow gesucht".
+
+Behoben durch eine Rollentabelle im Prompt (Verwaltung / Makler / Nachmieter /
+Privat, je mit typischem Wortlaut) und den ausdrücklichen Hinweis, den ganzen
+Text zu lesen. Lehre fürs Weitere: Ein Feld, dessen Beschreibung eine
+*Fundstelle* impliziert, wird auch nur dort gesucht.
+
+**Zusätzlich:** Ein Inserat schrieb „ab 01.09." ohne Jahr, das Modell gab
+korrekt `null` zurück, statt zu raten — und damit ging der Wunschtermin
+verloren, den `T_NACHMIETER` (§13) braucht. Der Input enthält jetzt das
+heutige Datum, und der Prompt lässt das nächste Vorkommen einsetzen. Das ist
+Kalenderrechnen mit einem genannten Datum, kein Raten.
+
+**Bekannte Lücke:** Kein Fixture verlangt `self_description: null`. Ein Modell,
+das dort immer etwas hineinschreibt, käme durch. Ein Inserat ganz ohne
+Rollenaussage wäre dafür nötig — falls dir eines unterkommt, ist es wertvoll.
+
 ## Offene Punkte für spätere Phasen
 
 - **Grounding-Freikontingent.** `priceCall` rechnet Suchanfragen konservativ
@@ -158,8 +238,10 @@ abrechnungsrelevanten Zahlen gehen nach `listing_event`. Abschaltbar über
 - **Cache-Treffer-Preis.** Gecachte Input-Tokens werden derzeit zum vollen
   Input-Satz abgerechnet. Die Schätzung liegt damit zu hoch statt zu niedrig.
 - **Thinking-Tokens.** Werden als `candidatesTokenCount + thoughtsTokenCount`
-  abgerechnet, weil Gemini beide getrennt meldet. Beim ersten echten Aufruf
-  gegen `totalTokenCount` gegenprüfen.
+  abgerechnet, weil Gemini beide getrennt meldet. Der Adapter prüft das jetzt
+  selbst gegen `totalTokenCount` und warnt einmal pro Prozess, wenn die Summen
+  nicht aufgehen. Ein Aufruf mit tatsächlichen thinking-Tokens (also gegen
+  3.7 Flash oder 3.1 Pro, nicht Flash-Lite) steht noch aus.
 
 ## Hinweis zur lokalen npm-Installation
 

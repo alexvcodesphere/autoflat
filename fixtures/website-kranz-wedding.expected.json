@@ -1,0 +1,37 @@
+{
+  "note": "Eigene Verwaltungs-Website ohne Objektnummer. Prueft: URL-Ersatzschluessel, echte E-Mail wird uebernommen, WBS erforderlich, Gesamtmiete als warm_rent.",
+  "must_equal": {
+    "listing.external_id": "url:kranz-immobilien.de/angebote/3-zimmer-wedding",
+    "listing.street": "Nazarethkirchstraße",
+    "listing.postcode": "13347",
+    "listing.rooms": 3,
+    "listing.living_space": 71.5,
+    "listing.cold_rent": 742,
+    "listing.warm_rent": 1022,
+    "listing.deposit": 2226,
+    "listing.available_from": "2026-11-15",
+    "listing.wbs_required": true,
+    "provider.email_raw": "vermietung@kranz-immobilien.de"
+  },
+  "must_be_null": [
+    "listing.house_number",
+    "provider.platform_private_flag"
+  ],
+  "must_not_be_null": [
+    "listing.district",
+    "provider.name_raw",
+    "provider.contact_person_raw",
+    "provider.phone_raw",
+    "provider.self_description"
+  ],
+  "features_include_any_of": [
+    [
+      "Fahrstuhl",
+      "Aufzug"
+    ],
+    [
+      "Keller",
+      "Kellerabteil"
+    ]
+  ]
+}
