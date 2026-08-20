@@ -10,6 +10,7 @@
  *   must_be_null              Felder, die NICHT dastehen  <- "keine erfundenen Felder"
  *   must_not_be_null          Felder, die das Modell finden muss
  *   features_include_any_of   je Gruppe mindestens eine Schreibweise
+ *   features_must_not_include verneinte Merkmale ("Einen Balkon gibt es nicht")
  *   must_contain              Teilstring, wenn der genaue Wortlaut schwankt
  *   must_not_appear_anywhere  Zahlen aus "Ähnliche Objekte" o. ä.
  */
@@ -27,6 +28,7 @@ export interface FixtureExpectation {
   must_not_be_null?: string[];
   must_contain?: Record<string, string>;
   features_include_any_of?: string[][];
+  features_must_not_include?: string[];
   must_not_appear_anywhere?: string[];
 }
 
@@ -115,6 +117,12 @@ export function checkPayload(payload: Payload, expected: FixtureExpectation): Ch
     );
     if (hit) passed++;
     else failures.push(`features: keine Variante von [${group.join(', ')}] in [${features.join(', ')}]`);
+  }
+
+  for (const needle of expected.features_must_not_include ?? []) {
+    const hit = features.find((f) => f.toLowerCase().includes(needle.toLowerCase()));
+    if (!hit) passed++;
+    else failures.push(`features: "${hit}" — das Inserat verneint dieses Merkmal ausdrücklich`);
   }
 
   const haystack = JSON.stringify(payload);

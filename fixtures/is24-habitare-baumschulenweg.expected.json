@@ -1,0 +1,58 @@
+{
+  "note": "Echtes IS24-Inserat, Makler (habitare Immobilien IVD). Drei Fallen: zwei konkurrierende IDs (Scout-ID vs. interne Objekt-ID), verneinte Merkmale (\"Einen Balkon gibt es nicht\", \"ein Aufzug ist nicht vorhanden\"), und die Strasse steht nur im Beschreibungstext, nicht im Adressfeld.",
+  "must_equal": {
+    "listing.external_id": "169608740",
+    "listing.house_number": null,
+    "listing.postcode": "12437",
+    "listing.rooms": 4,
+    "listing.living_space": 88.3,
+    "listing.cold_rent": 688.74,
+    "listing.warm_rent": 904.24,
+    "listing.deposit": 2066.22,
+    "listing.available_from": null,
+    "listing.wbs_required": null,
+    "provider.platform_private_flag": false
+  },
+  "must_be_null": [
+    "provider.email_raw"
+  ],
+  "must_not_be_null": [
+    "listing.street",
+    "listing.district",
+    "listing.description_excerpt",
+    "provider.name_raw",
+    "provider.contact_person_raw",
+    "provider.website_raw",
+    "provider.self_description"
+  ],
+  "must_contain": {
+    "listing.street": "Scheiblerstra",
+    "provider.name_raw": "habitare",
+    "provider.contact_person_raw": "Tölken",
+    "provider.website_raw": "habitare-immobilien.de"
+  },
+  "features_include_any_of": [
+    [
+      "Altbau"
+    ],
+    [
+      "2. OG",
+      "2.OG",
+      "2. Obergeschoss"
+    ],
+    [
+      "WG-geeignet",
+      "WG geeignet"
+    ]
+  ],
+  "features_must_not_include": [
+    "Balkon",
+    "Aufzug",
+    "Fahrstuhl"
+  ],
+  "must_not_appear_anywhere": [
+    "1038",
+    "9.95",
+    "134.45"
+  ]
+}

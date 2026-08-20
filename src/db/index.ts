@@ -5,7 +5,7 @@ import { env } from '../config/env.ts';
 
 export type Db = Database.Database;
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 3;
 
 const SCHEMA_PATH = resolve(import.meta.dirname, '../../db/schema.sql');
 

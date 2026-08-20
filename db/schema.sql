@@ -82,3 +82,36 @@ CREATE INDEX IF NOT EXISTS idx_verw_canon    ON verwaltung(name_canonical);
 CREATE INDEX IF NOT EXISTS idx_seed_prio     ON seed_company(priority, id) WHERE status='pending';
 CREATE INDEX IF NOT EXISTS idx_listing_state ON listing_event(state);
 CREATE INDEX IF NOT EXISTS idx_listing_send  ON listing_event(send_after) WHERE state='queued';
+
+-- ---------------------------------------------------------------------------
+-- Schema v2 (Phase 4): Quarantäne für den Cowork-Import (§17)
+-- ---------------------------------------------------------------------------
+-- Cowork liefert JSON ohne erzwungenes Schema. Zeilen, die die Prüfung nicht
+-- bestehen, landen hier statt in `verwaltung` — erst ein Klick in der
+-- Firmen-Ansicht schreibt sie weiter.
+CREATE TABLE IF NOT EXISTS prewarm_quarantine (
+  id             INTEGER PRIMARY KEY,
+  seed_id        INTEGER REFERENCES seed_company(id),
+  name_input     TEXT NOT NULL,
+  name_canonical TEXT,
+  payload        TEXT NOT NULL,
+  reasons        TEXT NOT NULL DEFAULT '[]',
+  status         TEXT NOT NULL DEFAULT 'open'
+                 CHECK(status IN ('open','accepted','rejected')),
+  created_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_quarantine_open ON prewarm_quarantine(status) WHERE status='open';
+
+-- ---------------------------------------------------------------------------
+-- Schema v3 (Phase 4): Grounding-Freikontingent (§11)
+-- ---------------------------------------------------------------------------
+-- Die Gemini-3-Familie hat 5.000 freie Suchanfragen pro Monat, geteilt über
+-- alle 3.x-Modelle. Ohne diesen Zähler müsste jede Suche voll berechnet
+-- werden — bei ~5 Anfragen je Recherche sind das $0,07 statt $0,00, und die
+-- Tagesbremse aus §16 schlüge nach 25 Recherchen an, die in Wirklichkeit
+-- gratis waren.
+CREATE TABLE IF NOT EXISTS grounding_usage (
+  month    TEXT PRIMARY KEY,          -- YYYY-MM, UTC
+  queries  INTEGER NOT NULL DEFAULT 0
+);

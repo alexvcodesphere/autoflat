@@ -5,7 +5,7 @@ Bewerbungsmail. Die maßgebliche Spec ist das Projektdokument; Verweise wie
 „§11" beziehen sich darauf. Leg sie als `docs/spec.md` ab, damit sie
 mitversioniert wird.
 
-**Stand: Phase 3 abgeschlossen.** Die Bauphasen stehen in der Spec, §14.
+**Stand: Phase 4 gebaut, Modelllauf steht aus.** Die Bauphasen stehen in der Spec, §14.
 
 ---
 
@@ -29,6 +29,11 @@ npm run llm:smoke           # echter Aufruf
 | `npm run llm:smoke` | ein Adapteraufruf gegen `schemas/smoke.json` |
 | `npm run extract:fixtures` | Extraktion über alle Fixtures, mit Zusicherungen |
 | `npm run draft:render` | T_VERWALTUNG aus gecachten Payloads, ohne Modell |
+| `npm run research:firma -- "Name"` | Firmenrecherche mit Grounding (§8 Flow B) |
+| `npm run grounding:check` | prüft, ob die Google-Suche tatsächlich feuert |
+| `npm run seed:places` | füllt `seed_company` aus der Places API (§17) |
+| `npm run prewarm:batch` | nächste 15 Firmen für Cowork, `--stats` zeigt die Queue |
+| `npm run prewarm:import -- x.json` | Cowork-Ergebnis einlesen, `--quarantine` zeigt Offene |
 
 Erster echter Aufruf am 20.08.2026 gegen `gemini-3.5-flash-lite`: 1089 ms,
 203 In / 114 Out, $0,00034590, Schema sauber validiert.
@@ -59,6 +64,11 @@ src/render/            Draft-Erzeugung ohne LLM: Template, Anrede, Betreff.
 prompts/profil.md      Bewerberprofil (Bonitätsblock).
 prompts/t_verwaltung.md  Template T_VERWALTUNG.
 data/payloads/         Gecachte Extraktionen, Eingabe für draft:render.
+src/db/verwaltung.ts   Firmen-Cache (§3), Konfidenz-Ordnung.
+src/db/seed.ts         Warteschlange fürs Vorwärmen + Quarantäne.
+src/lib/prewarm-import.ts  Validierung der Cowork-Ausgabe (§17).
+src/stages/research-firma.ts  Firmenrecherche, ein Grounding-Aufruf.
+docs/cowork-prewarm-prompt.md  Die Cowork-Aufgabe, mitversioniert.
 src/config/env.ts      .env-Zugriff an genau einer Stelle.
 src/db/                Verbindung + Schema.
 src/lib/normalize.ts   Namensnormalisierung (§6). Überall dieselbe Funktion.
@@ -288,6 +298,94 @@ Eine Berliner Bewerbung mit Münchner Absender wirft beim Empfänger eine Frage
 auf. Besser, sie steht beantwortet in der Mail, als dass sie unbeantwortet im
 Kopf bleibt. Der Satz steht als `hinweis_adresse` im Profil und ist frei
 formulierbar; fehlt er, entfällt die Zeile ersatzlos.
+
+## Phase 4 — Entscheidungen und Funde
+
+### Grounding und JSON schließen sich aus — der teuerste Fund der Phase
+
+Die Doku und mehrere Quellen behaupten, Gemini 3 könne strukturierte Ausgabe
+mit der Google-Suche kombinieren. **Für `generateContent` stimmt das nicht.**
+Gemessen am 2026-08-20 mit `npm run grounding:check`:
+
+| Konfiguration | Suchanfragen | Chunks |
+|---|---|---|
+| `googleSearch` + `responseJsonSchema` | 0 | 0 |
+| `googleSearch`, freier Text | **3** | **3** |
+| `googleSearch` + JSON-Modus ohne Schema | 0 | 0 |
+
+Nicht das strikte Schema ist das Problem, sondern **jede** JSON-Ausgabe. Und
+es gibt keinen Fehler: das Werkzeug fällt still weg.
+
+Was dabei herauskommt, ist schlimmer als ein Absturz. Drei Läufe gegen
+dieselbe Firma lieferten **drei verschiedene E-Mail-Adressen** — jeweils nach
+dem Muster `vorname.nachname@domain` erfunden — samt Belegprosa über Seiten,
+die nie geöffnet wurden („Das Impressum von … bestätigt", „Auf der Teamseite
+werden … aufgeführt"). Mit `confidence: "high"`.
+
+**Konsequenz 1: der Adapter macht zwei Aufrufe.** Erst gegroundet in Prosa
+recherchieren, dann ohne Werkzeuge in das Schema übertragen. Der
+Strukturierungsschritt hat einen eigenen Systemprompt, der ihm ausdrücklich
+verbietet, Lücken aus eigenem Wissen zu füllen — sonst wäre die Trennung
+wertlos.
+
+**Konsequenz 2: keine Werkzeugspur ist ein Fehlschlag.** Findet der Adapter
+keine `groundingMetadata`, gibt er `ok: false` zurück, statt die
+Erinnerungsantwort durchzureichen. Die Stufe leitet das nach T0 (§8 Flow B).
+Abschaltbar über `requireGrounding: false`, aber nur für die Diagnose.
+
+**Konsequenz 3: keine geratenen URL-Pfade.** Ein Zwischenstand hängte neun
+vermutete Pfade an (`/team`, `/unternehmen/team`, `/ueber-uns` …), weil
+`urlContext` nur URLs holt, die wörtlich im Prompt stehen. Das war eine
+Sollbruchstelle: Ausgerechnet die kleinen Verwaltungen, für die es diesen
+Cache gibt, haben `/wir.html` oder `/index.php?id=7`, und ein geratener Pfad
+läuft still ins Leere. Übergeben wird jetzt nur die **bekannte** Adresse aus
+dem Inserat; die Unterseiten findet das Modell über `site:`-Suchen — eine
+Technik, die es in der Messung unaufgefordert selbst benutzt hat. Ist gar
+keine Website bekannt, ist das Auffinden der Domain der erste Arbeitsschritt,
+inklusive Rückfall auf Branchenverzeichnisse mit `confidence: "low"`.
+
+**Konsequenz 4: die Recherche bekommt mehr Zeit, als §8 vorsieht** — 90 s
+statt 20 s, die Personenrecherche 180 s. Der Portal-Wettlauf rechtfertigt
+Eile beim *Senden*, nicht beim Recherchieren: `research_firma` läuft einmal
+pro Firma, das Ergebnis liegt danach dauerhaft im Cache, und eine fehlende
+Adresse kostet den ganzen Direktkanal. Für Flow C argumentiert §8 selbst so
+(„Budget in Minuten, nicht Sekunden"). Überschreibbar per
+`STAGE_TIMEOUT_RESEARCH_FIRMA` in `.env`. Mehr Zeit allein hilft allerdings
+nicht — der Prompt muss Gründlichkeit auch einfordern, deshalb der Abschnitt
+„Gründlichkeit" in `prompts/research_firma.md`.
+
+**Konsequenz 5 für Phase 10:** Die Personenrecherche steht vor demselben
+Problem, mit höherem Einsatz. Ein erfundener „Anknüpfungspunkt" in einer Mail
+an eine Privatperson ist der peinlichste denkbare Ausgang. Die Hook-Eval muss
+mitprüfen, ob überhaupt gesucht wurde — nicht nur, ob die Antwort plausibel
+klingt.
+
+**Der Places-Lauf ist gratis, nicht zweistellig.** §17 rechnet mit einem
+„zweistelligen" Betrag. Text Search hat ein monatliches Freikontingent
+(1.000 bzw. 5.000 Anfragen je SKU); die 36 Anfragen aus
+`config/places-queries.json` bleiben weit darunter.
+
+**Text Search liefert höchstens 60 Treffer je Anfrage.** Deshalb wird nach
+Bezirk und Suchbegriff aufgeteilt, statt einmal „Hausverwaltung Berlin" zu
+fragen. Reicht die Ausbeute nicht, lassen sich in
+`config/places-queries.json` Ortsteile oder PLZ ergänzen — dedupliziert wird
+ohnehin über `name_canonical`.
+
+**Batch-Export und Import laufen als CLI, nicht als HTTP-Endpoint.** §14
+nennt für Phase 4 einen „Import-Endpoint", die fünfte harte Abhängigkeit sagt
+aber: „Phasen 1–5 laufen über Fixtures und CLI. Der HTTP-Service kommt erst in
+Phase 6." Die Logik liegt deshalb in `src/lib/prewarm-import.ts` und
+`src/db/seed.ts`; Phase 6 hängt `GET /prewarm/batch` und
+`POST /prewarm/import` davor, ohne dass sich etwas ändern muss.
+
+**Ein zweiter Recherche-Versuch kostet trotzdem.** Schlägt der erste fehl und
+greift der Adressversuch (§8 Flow B, Schritt 2), werden beide Aufrufe zu einem
+`LlmResult` zusammengeführt — sonst unterschlüge die Tagesabrechnung (§16) den
+ersten.
+
+**Schema v2**: `prewarm_quarantine` kam dazu. §6 kennt die Tabelle nicht, §17
+verlangt sie („Quarantänezeilen erscheinen in der Firmen-Ansicht zur
+Sichtprüfung").
 
 ## Offene Punkte für spätere Phasen
 

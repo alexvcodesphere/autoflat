@@ -5,104 +5,15 @@
  * gibt `ok:false` mit `error.kind` zurück.
  */
 import { GoogleGenAI } from '@google/genai';
-import type {
-  GenerateAdapter,
-  GenerateRequest,
-  LlmError,
-  LlmResult,
-  LlmUsage,
-} from '../types.ts';
+import type { GenerateAdapter, GenerateRequest, LlmResult, LlmUsage } from '../types.ts';
 import { priceCall, hasPricing } from '../pricing.ts';
 import { validateAgainst } from '../validate.ts';
 import { toGeminiJsonSchema } from './gemini-schema.ts';
+import {
+  PROVIDER, mapUsage, checkUsageConsistency, classifyError, REFUSAL_FINISH_REASONS,
+} from './gemini-common.ts';
 
-const PROVIDER = 'gemini';
-
-/** Minimale Sicht auf die SDK-Antwort — hält den Rest des Systems SDK-frei. */
-interface GeminiUsageMetadata {
-  promptTokenCount?: number;
-  candidatesTokenCount?: number;
-  thoughtsTokenCount?: number;
-  cachedContentTokenCount?: number;
-  toolUsePromptTokenCount?: number;
-  totalTokenCount?: number;
-}
-
-/**
- * Selbstkontrolle der Abrechnungsannahme.
- *
- * Wir rechnen `candidatesTokenCount + thoughtsTokenCount` zum Output-Satz ab.
- * Das stimmt nur, wenn Gemini beide getrennt meldet. Wären thoughts bereits
- * in candidates enthalten, zahlten wir sie doppelt und das Tagesbudget (§16)
- * stünde auf falschen Zahlen. Statt das zu glauben, prüfen wir es gegen
- * Geminis eigene Gesamtsumme — einmal pro Prozess, damit es kein Log-Rauschen
- * gibt.
- */
-let usageMismatchReported = false;
-
-function checkUsageConsistency(meta: GeminiUsageMetadata | undefined, model: string): void {
-  if (usageMismatchReported || !meta?.totalTokenCount) return;
-  const parts =
-    (meta.promptTokenCount ?? 0) +
-    (meta.candidatesTokenCount ?? 0) +
-    (meta.thoughtsTokenCount ?? 0) +
-    (meta.toolUsePromptTokenCount ?? 0);
-  if (parts === meta.totalTokenCount) return;
-  usageMismatchReported = true;
-  console.warn(
-    `[gemini-generate:${model}] Token-Summen gehen nicht auf: ` +
-      `prompt ${meta.promptTokenCount ?? 0} + candidates ${meta.candidatesTokenCount ?? 0} + ` +
-      `thoughts ${meta.thoughtsTokenCount ?? 0} + toolUse ${meta.toolUsePromptTokenCount ?? 0} ` +
-      `= ${parts}, gemeldet ${meta.totalTokenCount}. ` +
-      `Die Kostenrechnung in src/llm/pricing.ts unterstellt, dass thinking-Tokens ` +
-      `NICHT in candidates enthalten sind — das ist zu prüfen.`,
-  );
-}
-
-function mapUsage(meta: GeminiUsageMetadata | undefined): LlmUsage {
-  return {
-    inputTokens: meta?.promptTokenCount ?? 0,
-    outputTokens: meta?.candidatesTokenCount ?? 0,
-    thinkingTokens: meta?.thoughtsTokenCount ?? 0,
-    cachedInputTokens: meta?.cachedContentTokenCount ?? 0,
-  };
-}
-
-/** SDK-/HTTP-Fehler auf die sechs Fehlerarten aus §11 abbilden. */
-export function classifyError(err: unknown): LlmError {
-  if (err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError')) {
-    return { kind: 'timeout', message: err.message };
-  }
-  // `fetch failed` allein ist beim Debuggen wertlos — der eigentliche Grund
-  // (ENOTFOUND, ECONNREFUSED, Zertifikatsfehler) steckt in `cause`.
-  const cause = (err as { cause?: { message?: string; code?: string } } | null)?.cause;
-  const baseMessage = err instanceof Error ? err.message : String(err);
-  const message =
-    cause?.message && cause.message !== baseMessage
-      ? `${baseMessage}: ${cause.message}${cause.code ? ` (${cause.code})` : ''}`
-      : baseMessage;
-  const status = (err as { status?: number } | null)?.status;
-  const haystack = `${status ?? ''} ${message}`.toLowerCase();
-
-  if (status === 401 || status === 403 || /api[_ ]?key|unauthenticated|permission denied/.test(haystack)) {
-    return { kind: 'auth', message };
-  }
-  if (status === 429 || /rate limit|resource_exhausted|quota/.test(haystack)) {
-    return { kind: 'rate_limit', message };
-  }
-  if (/abort|timed? ?out|deadline/.test(haystack)) {
-    return { kind: 'timeout', message };
-  }
-  return { kind: 'unknown', message };
-}
-
-const REFUSAL_FINISH_REASONS = new Set([
-  'SAFETY',
-  'PROHIBITED_CONTENT',
-  'BLOCKLIST',
-  'RECITATION',
-  'SPII',
-]);
+export { classifyError } from './gemini-common.ts';
 
 export interface GeminiGenerateOptions {
   apiKey: string;
@@ -127,13 +38,10 @@ export function createGeminiGenerateAdapter(opts: GeminiGenerateOptions): Genera
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-      const base = (
-        usage: LlmUsage,
-        raw: string,
-      ): Omit<LlmResult<T>, 'ok' | 'data' | 'error'> => ({
+      const base = (usage: LlmUsage, raw: string): Omit<LlmResult<T>, 'ok' | 'data' | 'error'> => ({
         raw,
         usage,
-        costUsd: hasPricing(model) ? priceCall(model, usage).totalUsd : 0,
+        costUsd: priceCall(model, usage).totalUsd,
         ms: Math.round(performance.now() - startedAt),
         provider: PROVIDER,
         model,
@@ -156,8 +64,7 @@ export function createGeminiGenerateAdapter(opts: GeminiGenerateOptions): Genera
         checkUsageConsistency(response.usageMetadata, model);
         const usage = mapUsage(response.usageMetadata);
         const raw = response.text ?? '';
-        const candidate = response.candidates?.[0];
-        const finishReason = String(candidate?.finishReason ?? '');
+        const finishReason = String(response.candidates?.[0]?.finishReason ?? '');
         const blockReason = String(response.promptFeedback?.blockReason ?? '');
 
         if (blockReason || REFUSAL_FINISH_REASONS.has(finishReason)) {
@@ -212,17 +119,18 @@ export function createGeminiGenerateAdapter(opts: GeminiGenerateOptions): Genera
             ...base(usage, raw),
             ok: false,
             data: null,
-            error: {
-              kind: 'schema',
-              message: `Schemaverletzung: ${validation.errors.join('; ')}`,
-            },
+            error: { kind: 'schema', message: `Schemaverletzung: ${validation.errors.join('; ')}` },
           };
         }
 
         return { ...base(usage, raw), ok: true, data: validation.data };
       } catch (err) {
-        const usage: LlmUsage = { inputTokens: 0, outputTokens: 0 };
-        return { ...base(usage, ''), ok: false, data: null, error: classifyError(err) };
+        return {
+          ...base({ inputTokens: 0, outputTokens: 0 }, ''),
+          ok: false,
+          data: null,
+          error: classifyError(err),
+        };
       } finally {
         clearTimeout(timer);
       }

@@ -162,6 +162,32 @@ const HANDGELESEN: Record<string, Payload> = {
       self_description: 'Nachmieter für 2-Zimmer-Altbauwohnung ab 01.09. gesucht.',
     },
   }),
+  'is24-habitare-baumschulenweg': build({
+    // Makler-Inserat. Die Straße steht NUR im Beschreibungstext
+    // ("Die Wohnung befindet sich in der Scheiblerstraße"), nicht im
+    // Adressfeld — und Balkon wie Aufzug werden ausdrücklich verneint.
+    listing: {
+      external_id: '169608740',
+      street: 'Scheiblerstraße',
+      postcode: '12437',
+      district: 'Baumschulenweg',
+      rooms: 4,
+      living_space: 88.3,
+      cold_rent: 688.74,
+      warm_rent: 904.24,
+      deposit: 2066.22,
+      features: ['Altbau', '2. OG', 'WG-geeignet', 'Wintergarten', 'Badewanne', 'Dielen', 'Zentralheizung'],
+      description_excerpt:
+        'Ihre neue Altbauwohnung befindet sich in einem gepflegten Berliner Mehrfamilienhaus aus dem Jahr 1930.',
+    },
+    provider: {
+      name_raw: 'habitare Immobilien IVD, Immobilienmanagement & Standortberatung, Inhaber: Christian Kurtz',
+      contact_person_raw: 'Herr Björn Tölken',
+      website_raw: 'www.habitare-immobilien.de',
+      platform_private_flag: false,
+      self_description: 'Mieten Sie direkt beim Spezialisten: wir sind geprüftes IVD-Verbandsmitglied',
+    },
+  }),
 };
 
 for (const [name, handgelesen] of Object.entries(HANDGELESEN)) {

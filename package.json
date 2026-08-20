@@ -13,7 +13,13 @@
     "test": "node --test \"test/**/*.test.ts\"",
     "typecheck": "tsc --noEmit",
     "extract:fixtures": "node scripts/extract-fixtures.ts",
-    "draft:render": "node scripts/render-draft.ts"
+    "draft:render": "node scripts/render-draft.ts",
+    "prewarm:batch": "node scripts/prewarm-batch.ts",
+    "prewarm:import": "node scripts/prewarm-import.ts",
+    "seed:places": "node scripts/seed-places.ts",
+    "research:firma": "node scripts/research-firma.ts",
+    "pipeline": "node scripts/pipeline.ts",
+    "grounding:check": "node scripts/grounding-check.ts"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",

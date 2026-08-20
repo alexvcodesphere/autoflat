@@ -2,6 +2,8 @@ node_modules/
 .npm-cache/
 # maschinenspezifisch: Umgehung fuer den root-eigenen npm-Cache, siehe README
 .npmrc
+# lokale Sandbox-Freigaben, maschinenspezifisch
+.claude/settings.local.json
 .env
 data/
 !data/.gitkeep

@@ -36,7 +36,7 @@
             "string",
             "null"
           ],
-          "description": "Objekt-, Inserats- oder Scout-ID, exakt wie auf der Seite. Keine erfundene Nummer, keine aus der URL geratene. Steht keine da: null."
+          "description": "Die Inseratsnummer des Portals, exakt wie sie dasteht — bei ImmoScout24 die \"Scout-ID\", bei Kleinanzeigen die \"Anzeigen-ID\". Stehen mehrere Nummern da, nimm die des Portals, nicht die interne \"Objekt-ID\" des Anbieters: nur die Portal-ID passt zur URL und ist stabil. Keine erfundene Nummer, keine aus der URL geratene. Steht keine da: null."
         },
         "url": {
           "type": [
@@ -128,7 +128,7 @@
           "items": {
             "type": "string"
           },
-          "description": "Kurze Ausstattungs- und Objektmerkmale, je 1-3 Wörter, in der Sprache des Inserats. Aufnehmen: Bauform (Altbau, Neubau), Etage (\"3. OG\", \"EG\"), Balkon/Terrasse/Garten, Einbauküche, Bad-Merkmale (Wanne, Dusche, Fenster), Aufzug, Keller, Stellplatz, Bodenbelag, Heizungsart, Zustand (saniert, renoviert), WG-geeignet, Haustiere erlaubt, Denkmalschutz. Nicht aufnehmen: Werbefloskeln (\"traumhaft\", \"Wohlfühloase\"), Lagebeschreibungen, Preise, Fristen. Leeres Array, wenn nichts davon dasteht."
+          "description": "Kurze Ausstattungs- und Objektmerkmale, je 1-3 Wörter, in der Sprache des Inserats. Aufnehmen: Bauform (Altbau, Neubau), Etage (\"3. OG\", \"EG\"), Balkon/Terrasse/Garten, Einbauküche, Bad-Merkmale (Wanne, Dusche, Fenster), Aufzug, Keller, Stellplatz, Bodenbelag, Heizungsart, Zustand (saniert, renoviert), WG-geeignet, Haustiere erlaubt, Denkmalschutz. NICHT aufnehmen, was das Inserat verneint (\"Einen Balkon gibt es nicht\", \"ein Aufzug ist nicht vorhanden\") — ein Merkmal kommt nur hinein, wenn die Wohnung es hat. Ebenfalls nicht aufnehmen: Werbefloskeln (\"traumhaft\", \"Wohlfühloase\"), Lagebeschreibungen, Preise, Fristen. Leeres Array, wenn nichts davon dasteht."
         },
         "description_excerpt": {
           "type": [

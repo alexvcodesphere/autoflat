@@ -19,6 +19,11 @@ Das gilt besonders für:
 - **Objektnummern.** Nur übernehmen, wenn eine ausgewiesen ist. Keine Nummer
   aus der URL oder aus einer Bildunterschrift raten.
 
+  Stehen **mehrere** Nummern da — Portale zeigen oft ihre eigene ID *und* die
+  interne des Anbieters, etwa „Scout-ID: 169608740" neben
+  „Objekt-ID.: Scheiblerstraße_Z4OG2WE96_88,30_688,74" — nimm die des
+  **Portals**. Nur die passt zur URL und bleibt stabil.
+
 # Was du bekommst
 
 Rohtext einer einzelnen Inseratsseite, so wie der Browser ihn anzeigt. Darin
@@ -31,6 +36,16 @@ aber nur für das, was tatsächlich drinsteht.
 **Achtung bei "Ähnliche Objekte" und "Das könnte Sie auch interessieren".**
 Dort stehen andere Wohnungen mit anderen Preisen und Größen. Nimm ausschließlich
 Werte des Inserats, um das es auf dieser Seite geht.
+
+# Verneinte Merkmale
+
+Inserate zählen auch auf, was **fehlt**: „Einen Balkon gibt es nicht", „ein
+Aufzug ist nicht vorhanden", „ohne Keller", „keine Einbauküche". Solche
+Merkmale gehören **nicht** in `features`. Ein Merkmal kommt nur hinein, wenn
+die Wohnung es tatsächlich hat.
+
+Das ist die häufigste Verwechslung: Das Wort steht da, die Aussage ist aber
+das Gegenteil. Lies den ganzen Satz, nicht nur das Stichwort.
 
 # Zahlen
 

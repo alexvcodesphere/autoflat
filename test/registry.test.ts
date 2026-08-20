@@ -56,15 +56,38 @@ test('Modell ohne Preis => Startfehler', () => {
   );
 });
 
-test('research-Stufe ohne Adapter => Startfehler (Phase 1)', () => {
+test('research-Stufen binden seit Phase 4', () => {
+  const r = loadRegistry({
+    env: {
+      ...OK_ENV,
+      STAGE_RESEARCH_FIRMA: 'gemini:gemini-3.7-flash',
+      STAGE_RESEARCH_PERSON: 'gemini:gemini-3.1-pro-preview',
+    } as NodeJS.ProcessEnv,
+    stages: ['research_firma', 'research_person'],
+  });
+  assert.equal(r.bindings.research_firma.model, 'gemini-3.7-flash');
+  assert.equal(r.bindings.research_person.capability, 'research');
+});
+
+test('Anbieter ohne research-Adapter => Startfehler', () => {
   assert.throws(
     () =>
       loadRegistry({
-        env: { ...OK_ENV, STAGE_RESEARCH_FIRMA: 'gemini:gemini-3.7-flash' } as NodeJS.ProcessEnv,
+        env: { ...OK_ENV, STAGE_RESEARCH_FIRMA: 'anthropic:claude-opus-5' } as NodeJS.ProcessEnv,
         stages: ['research_firma'],
       }),
-    /kein research-Adapter/,
+    /kein research-Adapter|steht nicht in config/,
   );
+});
+
+test('research() liefert einen Adapter mit Grounding', () => {
+  const r = loadRegistry({
+    env: { ...OK_ENV, STAGE_RESEARCH_FIRMA: 'gemini:gemini-3.7-flash' } as NodeJS.ProcessEnv,
+    stages: ['research_firma'],
+  });
+  const adapter = r.research('research_firma');
+  assert.equal(adapter.supportsGrounding, true);
+  assert.match(adapter.id, /^gemini-research:/);
 });
 
 test('anthropic ist als Anbieter bekannt, hat aber noch keinen Adapter', () => {

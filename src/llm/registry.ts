@@ -10,6 +10,7 @@ import { requireGeminiApiKey } from '../config/env.ts';
 import { hasPricing, knownModels } from './pricing.ts';
 import type { GenerateAdapter, ResearchAdapter } from './types.ts';
 import { createGeminiGenerateAdapter } from './providers/gemini-generate.ts';
+import { createGeminiResearchAdapter, type GeminiResearchOptions } from './providers/gemini-research.ts';
 
 export type Capability = 'generate' | 'research';
 
@@ -48,15 +49,57 @@ const STAGE_CAPABILITY: Record<StageName, Capability> = {
   research_person: 'research',
 };
 
-/** Timeouts aus dem Latenzbudget (§8). Die Stufe darf abweichen. */
-export const STAGE_TIMEOUT_MS: Record<StageName, number> = {
+/**
+ * Timeouts je Stufe. Überschreibbar per .env, z. B.
+ * `STAGE_TIMEOUT_RESEARCH_FIRMA=120000`.
+ *
+ * ABWEICHUNG VON §8: Dort bekommt Flow B 25 s und die Firmenrecherche 20 s.
+ * Das ist zu knapp und aus dem falschen Motiv abgeleitet.
+ *
+ * Der Portal-Wettlauf rechtfertigt Eile beim *Senden*, nicht beim
+ * Recherchieren. Die Firmenrecherche läuft **einmal pro Firma, für immer** —
+ * ihr Ergebnis liegt danach im Cache und bedient jedes weitere Inserat
+ * derselben Firma in Flow A. Eine falsche oder fehlende Adresse kostet den
+ * ganzen Kanal: dann bleibt das Portalformular, wo ich Platz 200 bin. Und
+ * selbst zwei Minuten bis zur Direktmail schlagen das Formular haushoch.
+ *
+ * §8 argumentiert für Flow C übrigens selbst so: "Budget in Minuten, nicht
+ * Sekunden. Nicht auf 20 s herunteroptimieren — dabei ginge genau die
+ * Qualität verloren, die den Zweig lohnend macht."
+ *
+ * Zur Einordnung: ein gegroundeter Lauf mit 5 Suchanfragen brauchte 10,7 s.
+ * Das Budget ist keine Zielvorgabe, sondern eine Obergrenze — mehr Zeit
+ * nutzt das Modell nur, wenn der Prompt Gründlichkeit verlangt.
+ */
+const DEFAULT_STAGE_TIMEOUT_MS: Record<StageName, number> = {
   extract: 8_000,
   gate: 8_000,
   draft: 10_000,
   draft_privat: 45_000,
-  research_firma: 20_000,
-  research_person: 75_000,
+  research_firma: 90_000,
+  research_person: 180_000,
 };
+
+const TIMEOUT_ENV_KEY: Record<StageName, string> = {
+  extract: 'STAGE_TIMEOUT_EXTRACT',
+  gate: 'STAGE_TIMEOUT_GATE',
+  draft: 'STAGE_TIMEOUT_DRAFT',
+  draft_privat: 'STAGE_TIMEOUT_DRAFT_PRIVAT',
+  research_firma: 'STAGE_TIMEOUT_RESEARCH_FIRMA',
+  research_person: 'STAGE_TIMEOUT_RESEARCH_PERSON',
+};
+
+export function stageTimeoutMs(stage: StageName, source: NodeJS.ProcessEnv = process.env): number {
+  const raw = source[TIMEOUT_ENV_KEY[stage]];
+  if (raw === undefined || raw.trim() === '') return DEFAULT_STAGE_TIMEOUT_MS[stage];
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < 1000) {
+    throw new Error(`${TIMEOUT_ENV_KEY[stage]}=${JSON.stringify(raw)}: erwartet Millisekunden >= 1000.`);
+  }
+  return parsed;
+}
+
+export const STAGE_TIMEOUT_MS: Record<StageName, number> = DEFAULT_STAGE_TIMEOUT_MS;
 
 type GenerateFactory = (model: string) => GenerateAdapter;
 type ResearchFactory = (model: string) => ResearchAdapter;
@@ -65,8 +108,20 @@ const GENERATE_FACTORIES: Record<string, GenerateFactory> = {
   gemini: (model) => createGeminiGenerateAdapter({ apiKey: requireGeminiApiKey(), model }),
 };
 
-// Phase 4: gemini-research (Grounding). Phase >= 10 ggf. claude-code-research.
-const RESEARCH_FACTORIES: Record<string, ResearchFactory> = {};
+// Phase >= 10 ggf. claude-code-research, falls die Eval es verlangt (§11).
+const RESEARCH_FACTORIES: Record<string, ResearchFactory> = {
+  gemini: (model) =>
+    createGeminiResearchAdapter({ apiKey: requireGeminiApiKey(), model, ...researchOverrides }),
+};
+
+/**
+ * Nur für Diagnose-Skripte: Werkzeugauswahl und Grounding-Callback setzen,
+ * bevor die Registry den Adapter baut. Die Pipeline fasst das nicht an.
+ */
+let researchOverrides: Partial<GeminiResearchOptions> = {};
+export function setResearchOverrides(overrides: Partial<GeminiResearchOptions>): void {
+  researchOverrides = overrides;
+}
 
 const KNOWN_PROVIDERS = new Set([
   ...Object.keys(GENERATE_FACTORIES),
@@ -103,7 +158,7 @@ export function parseStageSpec(stage: StageName, spec: string): StageBinding {
     capability: STAGE_CAPABILITY[stage],
     provider,
     model,
-    timeoutMs: STAGE_TIMEOUT_MS[stage],
+    timeoutMs: stageTimeoutMs(stage),
   };
 }
 
@@ -204,5 +259,12 @@ export function loadRegistry(opts: LoadRegistryOptions = {}): Registry {
   return registry;
 }
 
-/** Stufen, für die in Phase 1 bereits ein Adapter existiert. */
+/**
+ * Stufen mit vorhandenem Adapter.
+ *
+ * PHASE1_STAGES bleibt als Name bestehen, weil Skripte darauf verweisen; seit
+ * Phase 4 sind auch die research-Stufen gebunden.
+ */
 export const PHASE1_STAGES: readonly StageName[] = ['extract', 'gate', 'draft', 'draft_privat'];
+
+export const AVAILABLE_STAGES: readonly StageName[] = STAGES;

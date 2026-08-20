@@ -1,0 +1,30 @@
+{
+  "$comment": [
+    "Suchanfragen für scripts/seed-places.ts (§17).",
+    "Text Search (New) liefert höchstens 60 Treffer je Anfrage — deshalb",
+    "wird nach Bezirk aufgeteilt statt einmal 'Hausverwaltung Berlin' zu",
+    "fragen. Reicht die Ausbeute nicht, ergänze Ortsteile oder PLZ hier;",
+    "das Skript dedupliziert ohnehin über name_canonical.",
+    "Kosten: Text Search hat ein monatliches Freikontingent (1.000 bzw.",
+    "5.000 Anfragen je SKU). Ein Lauf über diese Liste bleibt darunter."
+  ],
+  "terms": [
+    "Hausverwaltung",
+    "Immobilienverwaltung",
+    "Immobilien Vermietung"
+  ],
+  "areas": [
+    "Mitte, Berlin",
+    "Friedrichshain-Kreuzberg, Berlin",
+    "Pankow, Berlin",
+    "Charlottenburg-Wilmersdorf, Berlin",
+    "Spandau, Berlin",
+    "Steglitz-Zehlendorf, Berlin",
+    "Tempelhof-Schöneberg, Berlin",
+    "Neukölln, Berlin",
+    "Treptow-Köpenick, Berlin",
+    "Marzahn-Hellersdorf, Berlin",
+    "Lichtenberg, Berlin",
+    "Reinickendorf, Berlin"
+  ]
+}

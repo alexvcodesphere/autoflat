@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "research_firma.v1.json",
+  "title": "Firmenrecherche (§11)",
+  "description": "Firmenname -> verifizierte Vermietungs-Emailadresse. Die einzige teure Operation im System, und pro Firma genau einmal nötig.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "domain", "impressum_url", "vermietung_url", "email_vermietung",
+    "email_general", "contact_persons", "firm_type", "portal_only",
+    "confidence", "evidence"
+  ],
+  "properties": {
+    "domain": {
+      "type": ["string", "null"],
+      "description": "Hauptdomain der Firma ohne Protokoll und ohne www, z. B. \"kranz-immobilien.de\". Nur wenn die Website zweifelsfrei zu genau dieser Firma gehört."
+    },
+    "impressum_url": {
+      "type": ["string", "null"],
+      "description": "Vollständige URL der Impressumsseite, auf der du die Angaben gelesen hast."
+    },
+    "vermietung_url": {
+      "type": ["string", "null"],
+      "description": "URL der Seite mit den eigenen Mietangeboten, falls vorhanden (\"Aktuelle Angebote\", \"Vermietung\", \"Objekte\")."
+    },
+    "email_vermietung": {
+      "type": ["string", "null"],
+      "description": "Die Adresse, an die eine Mietanfrage gehört — vermietung@, immobilien@, wohnen@ oder eine namentliche Adresse der zuständigen Person. NICHT buchhaltung@, hausgeld@, technik@, bewerbung@ oder datenschutz@. Gibt es keine spezielle Vermietungsadresse: null."
+    },
+    "email_general": {
+      "type": ["string", "null"],
+      "description": "Allgemeine Kontaktadresse, meist info@ oder kontakt@. Nur wenn sie wörtlich auf der Seite steht."
+    },
+    "contact_persons": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Namen der für Vermietung zuständigen Personen, so wie sie dastehen. Leeres Array, wenn keine genannt sind."
+    },
+    "firm_type": {
+      "type": "string",
+      "enum": ["verwaltung", "makler", "gesellschaft", "genossenschaft", "privat", "unknown"],
+      "description": "Was die Firma ist. Steht fast immer auf der Website: \"Hausverwaltung / WEG-Verwaltung / Mietverwaltung\" -> verwaltung. \"Verkauf und Vermietung / Immobilienmakler / IVD-Mitglied\" -> makler. Kommunale Wohnungsgesellschaft -> gesellschaft. Genossenschaft oder eG -> genossenschaft. Lässt sich das nicht belegen: unknown."
+    },
+    "portal_only": {
+      "type": "boolean",
+      "description": "true nur, wenn die Website ausdrücklich sagt, dass Anfragen ausschließlich über ein Portal oder ein Formular laufen und E-Mail-Anfragen nicht bearbeitet werden."
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low", "none"],
+      "description": "high = die E-Mail stand als mailto:-Link im Impressum. medium = sie stand als Text auf der Seite. low = erschlossen, etwa aus einem Muster anderer Adressen derselben Domain. none = nichts Belastbares gefunden."
+    },
+    "evidence": {
+      "type": ["string", "null"],
+      "description": "Ein bis zwei Sätze: welche Seite du gelesen hast und woran du die Firma wiedererkannt hast. Bei Zweifeln an der Identität hier sagen, warum."
+    }
+  }
+}

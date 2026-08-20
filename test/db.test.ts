@@ -12,13 +12,16 @@ function freshDb() {
   return { db, cleanup: () => { db.close(); rmSync(dir, { recursive: true, force: true }); } };
 }
 
-test('legt alle Tabellen aus §6 an', () => {
+test('legt alle Tabellen aus §6 und §17 an', () => {
   const { db, cleanup } = freshDb();
   try {
     const names = (db.prepare(
       `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`,
     ).all() as Array<{ name: string }>).map((r) => r.name).sort();
-    assert.deepEqual(names, ['listing_event', 'meta', 'seed_company', 'verwaltung']);
+    assert.deepEqual(names, [
+      'grounding_usage', 'listing_event', 'meta', 'prewarm_quarantine',
+      'seed_company', 'verwaltung',
+    ]);
     assert.equal(getSchemaVersion(db), SCHEMA_VERSION);
   } finally { cleanup(); }
 });
