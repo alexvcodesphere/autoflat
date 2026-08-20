@@ -20,14 +20,17 @@
     "research:firma": "node scripts/research-firma.ts",
     "pipeline": "node scripts/pipeline.ts",
     "grounding:check": "node scripts/grounding-check.ts",
-    "gate:fixtures": "node scripts/gate-fixtures.ts"
+    "gate:fixtures": "node scripts/gate-fixtures.ts",
+    "api": "node scripts/serve.ts"
   },
   "dependencies": {
+    "@fastify/cors": "^11.3.0",
     "@google/genai": "^2.18.0",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "better-sqlite3": "^13.0.3",
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "fastify": "^5.12.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",

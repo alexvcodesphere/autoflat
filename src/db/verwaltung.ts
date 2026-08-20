@@ -163,3 +163,72 @@ export function upsertVerwaltung(db: Db, input: VerwaltungUpsert): { id: number;
   );
   return { id: existing.id, skipped: false };
 }
+
+/**
+ * Handkorrektur aus der Firmen-Ansicht (§12).
+ *
+ * Setzt `confidence = 'verified'` — die stärkste Stufe, die kein
+ * Recherchelauf mehr überschreibt (§6). Das ist der einzige Weg, einen
+ * falschen Cache-Eintrag dauerhaft zu reparieren, und deshalb geht er
+ * bewusst nicht über `upsertVerwaltung`: dort würde die Konfidenzprüfung
+ * greifen, die hier gerade nicht gelten soll.
+ */
+export interface ManualFix {
+  firm_type?: FirmType;
+  email_vermietung?: string | null;
+  email_general?: string | null;
+  domain?: string | null;
+  vermietung_url?: string | null;
+  portal_only?: boolean;
+}
+
+export function correctVerwaltung(db: Db, id: number, fix: ManualFix): Verwaltung | null {
+  const existing = db.prepare(`SELECT * FROM verwaltung WHERE id = ?`).get(id) as
+    | VerwaltungRow
+    | undefined;
+  if (!existing) return null;
+
+  db.prepare(
+    `UPDATE verwaltung SET
+       firm_type = ?, email_vermietung = ?, email_general = ?, domain = ?,
+       vermietung_url = ?, portal_only = ?,
+       confidence = 'verified', last_verified_at = datetime('now')
+     WHERE id = ?`,
+  ).run(
+    fix.firm_type ?? existing.firm_type,
+    fix.email_vermietung === undefined ? existing.email_vermietung : fix.email_vermietung,
+    fix.email_general === undefined ? existing.email_general : fix.email_general,
+    fix.domain === undefined ? existing.domain : fix.domain,
+    fix.vermietung_url === undefined ? existing.vermietung_url : fix.vermietung_url,
+    fix.portal_only === undefined ? existing.portal_only : fix.portal_only ? 1 : 0,
+    id,
+  );
+
+  const row = db.prepare(`SELECT * FROM verwaltung WHERE id = ?`).get(id) as VerwaltungRow;
+  return hydrate(row);
+}
+
+export function listVerwaltung(db: Db, limit = 500): Verwaltung[] {
+  return (
+    db.prepare(`SELECT * FROM verwaltung ORDER BY name_canonical LIMIT ?`).all(limit) as VerwaltungRow[]
+  ).map(hydrate);
+}
+
+/**
+ * §10: "Eine eingegangene Antwort setzt confidence = 'verified' für die
+ * Firma, auch bei Absage. Nachrichten stoppen, der Cache lernt weiter."
+ */
+export function markVerified(db: Db, id: number): void {
+  db.prepare(
+    `UPDATE verwaltung SET confidence = 'verified', last_verified_at = datetime('now') WHERE id = ?`,
+  ).run(id);
+}
+
+/** §10: Bounce — bounce_count++, Konfidenz zurückstufen. */
+export function recordBounce(db: Db, id: number): void {
+  db.prepare(
+    `UPDATE verwaltung SET bounce_count = bounce_count + 1,
+       confidence = CASE confidence WHEN 'verified' THEN 'low' WHEN 'high' THEN 'low' ELSE 'none' END
+     WHERE id = ?`,
+  ).run(id);
+}
