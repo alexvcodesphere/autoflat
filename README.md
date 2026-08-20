@@ -299,6 +299,25 @@ auf. Besser, sie steht beantwortet in der Mail, als dass sie unbeantwortet im
 Kopf bleibt. Der Satz steht als `hinweis_adresse` im Profil und ist frei
 formulierbar; fehlt er, entfällt die Zeile ersatzlos.
 
+## Das Vorwärmen wird nicht betrieben
+
+Gebaut, getestet — und nach dem ersten echten Places-Lauf bewusst stillgelegt.
+§1 sagt: „Der Wettbewerbsvorteil ist nicht Geschwindigkeit … Der Vorteil ist
+der Kanal." Das Vorwärmen kauft nur Geschwindigkeit (3 s statt 20 s bis zur
+Mail), und die ist bei einer E-Mail nichts wert. Begründung im Detail in
+`docs/vorwaermen.md`.
+
+Der entscheidende Punkt: §17 vergibt Priorität 1 für „schon einmal in einem
+echten Inserat aufgetaucht" — die Spec kennt das beste Signal also selbst.
+Genau diese Firmen landen ohnehin im Cache, weil jede Recherche gespeichert
+wird. **Der Cache wärmt sich selbst, mit besserer Auswahl als die Places-Liste.**
+
+Was bleibt: `seed_company` als Warteschlange für *gescheiterte* Recherchen
+(§8 Flow B, Schritt 4), und die 1.185 Berliner Firmen mit Website als
+**Website-Index für Phase 12** — den Crawl der eigenen Angebotsseiten. §15
+erlaubt das ausdrücklich („Keine Massen-Mails an den Index" verbietet Mails,
+nicht das Crawlen).
+
 ## Phase 4 — Entscheidungen und Funde
 
 ### Grounding und JSON schließen sich aus — der teuerste Fund der Phase

@@ -1,4 +1,36 @@
-# Vorwärmen — was das ist und warum es jetzt anfängt
+# Vorwärmen — GESTOPPT, und warum
+
+> **Stand 2026-08-20: Der nächtliche Cowork-Batch wird nicht gefahren.**
+>
+> §1 der Spec sagt im ersten Absatz: „Der Wettbewerbsvorteil ist **nicht
+> Geschwindigkeit** … Der Vorteil ist der **Kanal**." Das Vorwärmen kauft
+> ausschließlich Geschwindigkeit — 3 Sekunden statt 20 bis zur fertigen Mail.
+> Bei einer E-Mail, die in einem Postfach landet, ist dieser Unterschied
+> nichts wert.
+>
+> Drei Gründe, jeder allein ausreichend:
+>
+> 1. **Der Cache wärmt sich selbst, und zwar besser.** §17 vergibt Priorität 1
+>    für „schon einmal in einem echten Inserat aufgetaucht" — die Spec weiß
+>    also, dass das das beste Signal ist. Genau diese Firmen landen ohnehin im
+>    Cache, weil jede Recherche gespeichert wird. Priorität 2–4 sind Vermutungen
+>    darüber, wer irgendwann inseriert.
+> 2. **Es erhöht die Abdeckung nicht.** Vorwärmen benutzt dieselbe
+>    Recherche-Operation. Scheitert sie bei Bedarf, wäre sie beim Vorwärmen
+>    genauso gescheitert.
+> 3. **Der Aufwand ist real.** Gemessen: 1.185 Firmen, 17 bis 68 Abende
+>    Handarbeit. Dagegen kostet eine Recherche bei Bedarf ~$0,01 und 11
+>    Sekunden.
+>
+> **Was bleibt:** `seed_company` als Warteschlange für *gescheiterte*
+> Recherchen (§8 Flow B, Schritt 4) und die Places-Liste als Website-Index
+> für die eigene Inseratssuche (Phase 12) — nicht als Vorwärm-Warteschlange.
+>
+> Der Code darunter ist gebaut und getestet. Sollte sich die Recherche bei
+> Bedarf als unzuverlässig erweisen, ist der Batch-Betrieb in zehn Minuten
+> wieder aktiv. Der Rest dieses Dokuments beschreibt ihn.
+
+---
 
 ## Das Problem in einem Absatz
 

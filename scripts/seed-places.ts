@@ -15,7 +15,11 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { openDb } from '../src/db/index.ts';
 import { insertSeed, seedStats } from '../src/db/seed.ts';
-import { normalizeCompanyName } from '../src/lib/normalize.ts';
+import { normalizeCompanyName, INDUSTRY_TOKENS } from '../src/lib/normalize.ts';
+import { assignPriorities } from '../src/lib/places-priority.ts';
+
+/** Schlüssel, die nur aus einem Branchenwort bestehen. */
+const INDUSTRY_ONLY: ReadonlySet<string> = INDUSTRY_TOKENS;
 
 const ENDPOINT = 'https://places.googleapis.com/v1/places:searchText';
 const FIELD_MASK = [
@@ -23,7 +27,7 @@ const FIELD_MASK = [
   'places.userRatingCount', 'places.primaryType', 'nextPageToken',
 ].join(',');
 
-interface PlacesConfig { terms: string[]; areas: string[] }
+interface PlacesConfig { terms: string[]; areas: string[]; priorityTarget?: { p2?: number } }
 interface Place {
   displayName?: { text?: string };
   formattedAddress?: string;
@@ -172,30 +176,36 @@ console.log(`\n\n${requests} Anfragen, ${candidates.length} eindeutige Firmen.\n
 
 if (candidates.length === 0) fail('Keine Treffer. Prüfe den API-Key und ob "Places API (New)" aktiviert ist.');
 
+const p2Target = config.priorityTarget?.p2 ?? 250;
+const prio = assignPriorities(candidates, p2Target);
+const priorityOf = prio.priorityOf;
+
+console.log(`Bewertungen: Median ${prio.median}, Maximum ${prio.max}`);
+console.log(
+  `Priorität 2: die ${p2Target} bestbewerteten mit Website` +
+  `${prio.p2Cut > 0 ? ` (ab ${prio.p2Cut} Bewertungen)` : ''} -> ${prio.counts[2]}`,
+);
+console.log(`Priorität 3: weitere mit Website                        -> ${prio.counts[3]}`);
+console.log(`Priorität 4: ohne Website, liefern meist "none"          -> ${prio.counts[4]}`);
+console.log(
+  `\nAbende bei einem Batch pro Nacht: P2 ~${prio.batchesP2}, P2+P3 ~${prio.batchesP2P3}. ` +
+  `Zielgröße änderbar in config/places-queries.json (priorityTarget.p2).`,
+);
+
 /**
- * Priorisierung (§17). Wichtiger als die Beschaffung: Places liefert
- * überwiegend Zwei-Mann-Verwaltungen mit zwei Vermietungen im Jahr. Alle
- * vorzuwärmen wären ~80 Batches.
- *
- * Priorität 1 vergibt dieses Skript nicht — die bekommt eine Firma nur, wenn
- * sie in einem echten Inserat auftaucht.
+ * Namen, die nur aus einem Branchenwort bestehen ("Hausverwaltung"), ergeben
+ * einen unbrauchbaren Cache-Schlüssel: jede weitere so benannte Firma würde
+ * mit ihr kollidieren. Places liefert das, wenn der Eintrag schlecht gepflegt
+ * ist — die echte Firma steht dann in der Domain.
  */
-const withRatings = candidates.map((c) => c.ratingCount).sort((a, b) => a - b);
-const median = withRatings.length > 0 ? withRatings[Math.floor(withRatings.length / 2)]! : 0;
-
-function priorityOf(c: Candidate): number {
-  if (!c.website) return 4;
-  return c.ratingCount > median ? 2 : 3;
+const degenerate = candidates.filter((c) => INDUSTRY_ONLY.has(c.canonical));
+if (degenerate.length > 0) {
+  console.log(`\n⚠ ${degenerate.length} Firma(en) mit unbrauchbarem Namen — Schlüssel wäre nur ein Branchenwort:`);
+  for (const c of degenerate.slice(0, 5)) {
+    console.log(`    "${c.name}" -> "${c.canonical}"  ·  ${c.website ?? 'keine Website'}`);
+  }
+  console.log('  Diese kollidieren miteinander im Cache. Namen in der Firmen-Ansicht korrigieren.');
 }
-
-const counts: Record<number, number> = { 2: 0, 3: 0, 4: 0 };
-for (const c of candidates) counts[priorityOf(c)] = (counts[priorityOf(c)] ?? 0) + 1;
-
-console.log(`Median der Bewertungszahl: ${median}`);
-console.log(`  Priorität 2 (Website, überdurchschnittlich bewertet): ${counts[2]}`);
-console.log(`  Priorität 3 (Website, wenige Bewertungen):            ${counts[3]}`);
-console.log(`  Priorität 4 (keine Website):                          ${counts[4]}`);
-console.log(`\nPriorität 2 sind ~${Math.ceil((counts[2] ?? 0) / 15)} Batches, 2+3 ~${Math.ceil(((counts[2] ?? 0) + (counts[3] ?? 0)) / 15)}.`);
 
 if (dryRun) {
   console.log('\n[DRY RUN] Nichts geschrieben. Beispiele:');
